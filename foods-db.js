@@ -111,6 +111,67 @@ const FOOD_DB = [
   { name: "컵밥(불고기)", cal: 480, na: 900, carb: 78, fat: 10, sugar: 5, protein: 15, serving: 280, unit: "1개" },
   { name: "즉석카레", cal: 280,    na: 900,  carb: 42, fat: 8,  sugar: 5, protein: 8,  serving: 200, unit: "1팩" },
   { name: "즉석짜장", cal: 240,    na: 800,  carb: 40, fat: 6,  sugar: 6, protein: 8,  serving: 200, unit: "1팩" },
+
+  // ── 국밥류 ──
+  { name: "돼지국밥", cal: 500, na: 1850, carb: 55, fat: 18, sugar: 2, protein: 28, serving: 700, unit: "1인분" },
+  { name: "순대국밥", cal: 480, na: 1700, carb: 55, fat: 16, sugar: 2, protein: 25, serving: 700, unit: "1인분" },
+  { name: "소머리국밥", cal: 520, na: 1500, carb: 55, fat: 20, sugar: 2, protein: 32, serving: 700, unit: "1인분" },
+  { name: "뼈다귀해장국", cal: 420, na: 1600, carb: 20, fat: 22, sugar: 1, protein: 38, serving: 650, unit: "1인분" },
+  { name: "따로국밥", cal: 480, na: 1400, carb: 55, fat: 14, sugar: 2, protein: 26, serving: 700, unit: "1인분" },
+  { name: "콩나물국밥", cal: 380, na: 1300, carb: 58, fat: 6,  sugar: 1, protein: 16, serving: 650, unit: "1인분" },
+
+  // ── 탕/전골 ──
+  { name: "감자탕", cal: 520, na: 1900, carb: 30, fat: 28, sugar: 3, protein: 38, serving: 600, unit: "1인분" },
+  { name: "추어탕", cal: 280, na: 1600, carb: 18, fat: 10, sugar: 2, protein: 28, serving: 500, unit: "1인분" },
+  { name: "동태탕", cal: 200, na: 1400, carb: 10, fat: 6,  sugar: 1, protein: 28, serving: 500, unit: "1인분" },
+  { name: "알탕",   cal: 180, na: 1500, carb: 8,  fat: 5,  sugar: 1, protein: 22, serving: 400, unit: "1인분" },
+  { name: "대구탕", cal: 200, na: 1200, carb: 8,  fat: 5,  sugar: 1, protein: 30, serving: 500, unit: "1인분" },
+  { name: "아귀찜", cal: 320, na: 1800, carb: 20, fat: 12, sugar: 4, protein: 35, serving: 400, unit: "1인분" },
+  { name: "부대전골", cal: 420, na: 2000, carb: 35, fat: 20, sugar: 5, protein: 25, serving: 450, unit: "1인분" },
+
+  // ── 보쌈/족발/곱창 ──
+  { name: "보쌈",  cal: 480, na: 900,  carb: 10, fat: 32, sugar: 3, protein: 42, serving: 250, unit: "1인분" },
+  { name: "족발",  cal: 550, na: 1000, carb: 12, fat: 38, sugar: 4, protein: 45, serving: 250, unit: "1인분" },
+  { name: "곱창",  cal: 380, na: 900,  carb: 8,  fat: 28, sugar: 1, protein: 28, serving: 200, unit: "1인분" },
+  { name: "대창",  cal: 480, na: 850,  carb: 5,  fat: 40, sugar: 1, protein: 30, serving: 200, unit: "1인분" },
+  { name: "막창",  cal: 420, na: 850,  carb: 5,  fat: 34, sugar: 1, protein: 32, serving: 200, unit: "1인분" },
+
+  // ── 볶음류 ──
+  { name: "오징어볶음",  cal: 280, na: 1200, carb: 18, fat: 10, sugar: 6, protein: 28, serving: 250, unit: "1인분" },
+  { name: "낙지볶음",    cal: 260, na: 1300, carb: 16, fat: 8,  sugar: 5, protein: 28, serving: 250, unit: "1인분" },
+  { name: "쭈꾸미볶음",  cal: 270, na: 1250, carb: 16, fat: 9,  sugar: 5, protein: 28, serving: 250, unit: "1인분" },
+  { name: "해물볶음",    cal: 300, na: 1100, carb: 18, fat: 10, sugar: 4, protein: 30, serving: 300, unit: "1인분" },
+  { name: "두루치기",    cal: 360, na: 1100, carb: 14, fat: 18, sugar: 4, protein: 30, serving: 250, unit: "1인분" },
+
+  // ── 구이/부침 ──
+  { name: "해물파전",  cal: 420, na: 800,  carb: 50, fat: 16, sugar: 3, protein: 18, serving: 300, unit: "1인분" },
+  { name: "김치전",    cal: 350, na: 750,  carb: 45, fat: 14, sugar: 3, protein: 10, serving: 250, unit: "1인분" },
+  { name: "빈대떡",    cal: 380, na: 600,  carb: 38, fat: 18, sugar: 2, protein: 16, serving: 250, unit: "1인분" },
+  { name: "쌈밥",      cal: 480, na: 700,  carb: 60, fat: 16, sugar: 3, protein: 24, serving: 350, unit: "1인분" },
+  { name: "수육",      cal: 420, na: 700,  carb: 4,  fat: 30, sugar: 1, protein: 36, serving: 200, unit: "1인분" },
+
+  // ── 만두/죽 ──
+  { name: "군만두",  cal: 320, na: 700, carb: 38, fat: 14, sugar: 2, protein: 12, serving: 200, unit: "1인분(6개)" },
+  { name: "물만두",  cal: 260, na: 600, carb: 34, fat: 8,  sugar: 1, protein: 12, serving: 200, unit: "1인분(6개)" },
+  { name: "찐만두",  cal: 240, na: 580, carb: 32, fat: 7,  sugar: 1, protein: 11, serving: 180, unit: "1인분(6개)" },
+  { name: "전복죽",  cal: 280, na: 600, carb: 50, fat: 4,  sugar: 1, protein: 14, serving: 350, unit: "1인분" },
+  { name: "야채죽",  cal: 180, na: 400, carb: 36, fat: 2,  sugar: 2, protein: 5,  serving: 350, unit: "1인분" },
+  { name: "쇠고기죽", cal: 250, na: 500, carb: 40, fat: 5, sugar: 1, protein: 14, serving: 350, unit: "1인분" },
+  { name: "닭죽",    cal: 230, na: 480, carb: 38, fat: 4,  sugar: 1, protein: 14, serving: 350, unit: "1인분" },
+
+  // ── 해산물 ──
+  { name: "회(모둠)",      cal: 280, na: 300, carb: 4,  fat: 8,  sugar: 0, protein: 45, serving: 250, unit: "1인분" },
+  { name: "초밥(모둠)",    cal: 480, na: 900, carb: 80, fat: 6,  sugar: 4, protein: 24, serving: 300, unit: "1인분" },
+  { name: "새우튀김",      cal: 320, na: 650, carb: 28, fat: 16, sugar: 1, protein: 18, serving: 200, unit: "1인분" },
+  { name: "꽃게탕",        cal: 250, na: 1500, carb: 10, fat: 8, sugar: 1, protein: 32, serving: 500, unit: "1인분" },
+  { name: "간장게장(1마리)", cal: 160, na: 1800, carb: 4, fat: 6, sugar: 1, protein: 22, serving: 150, unit: "1마리" },
+
+  // ── 분식 추가 ──
+  { name: "라볶이",      cal: 500, na: 1400, carb: 90, fat: 10, sugar: 18, protein: 14, serving: 350, unit: "1인분" },
+  { name: "쌀떡볶이",    cal: 350, na: 1000, carb: 72, fat: 4,  sugar: 14, protein: 8,  serving: 250, unit: "1인분" },
+  { name: "즉석떡볶이",  cal: 420, na: 1200, carb: 76, fat: 8,  sugar: 16, protein: 12, serving: 300, unit: "1인분" },
+  { name: "핫도그",      cal: 280, na: 450,  carb: 32, fat: 14, sugar: 4,  protein: 8,  serving: 130, unit: "1개" },
+  { name: "붕어빵(2개)", cal: 160, na: 130,  carb: 30, fat: 3,  sugar: 10, protein: 4,  serving: 90,  unit: "2개" },
 ];
 
 // 검색 함수: 2글자 이상 입력 시 이름 포함 검색
