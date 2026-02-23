@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#065f46">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>식사 기록</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green:  #065f46; --green-l: #10b981; --green-bg: #d1fae5;
+      --yellow: #d97706; --yellow-bg: #fef3c7;
+      --red:    #dc2626; --red-bg: #fee2e2;
+      --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
+      --gray-400: #94a3b8; --gray-600: #475569; --gray-800: #1e293b;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: var(--gray-50); color: var(--gray-800);
+           min-height: 100vh; max-width: 480px; margin: 0 auto; }
+
+    header { background: var(--green); color: white; padding: 16px 20px;
+             position: sticky; top: 0; z-index: 100;
+             display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+
+    /* ── 날짜 탐색 ── */
+    .date-nav { display: flex; align-items: center; justify-content: center;
+                gap: 16px; padding: 12px 20px; background: white;
+                border-bottom: 1px solid var(--gray-200); }
+    .date-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer;
+                color: var(--gray-600); padding: 4px 8px; border-radius: 6px; }
+    .date-btn:active { background: var(--gray-100); }
+    #date-display { font-size: 0.95rem; font-weight: 600; color: var(--gray-800); }
+
+    /* ── 나트륨 요약 바 ── */
+    .sodium-summary { margin: 14px 16px; background: white;
+                      border-radius: 16px; padding: 16px;
+                      box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .summary-row { display: flex; justify-content: space-between; align-items: flex-end;
+                   margin-bottom: 8px; }
+    .summary-title { font-size: 0.78rem; font-weight: 600; color: var(--gray-400);
+                     text-transform: uppercase; letter-spacing: 0.05em; }
+    .summary-value { font-size: 0.85rem; color: var(--gray-600); }
+    .sodium-number { font-size: 1.5rem; font-weight: 700; }
+    .sodium-unit { font-size: 0.82rem; color: var(--gray-400); margin-left: 2px; }
+    .progress-bar { height: 10px; background: var(--gray-100); border-radius: 5px; overflow: hidden; margin-bottom: 6px; }
+    .progress-fill { height: 100%; border-radius: 5px; transition: width 0.4s; background: var(--green-l); }
+    .progress-fill.warn { background: var(--yellow); }
+    .progress-fill.danger { background: var(--red); }
+    .nutrient-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .nutrient-box { background: var(--gray-50); border-radius: 10px; padding: 8px;
+                    text-align: center; }
+    .nutrient-box .val { font-size: 1rem; font-weight: 700; color: var(--gray-800); }
+    .nutrient-box .lbl { font-size: 0.7rem; color: var(--gray-400); margin-top: 2px; }
+
+    /* ── 식사 섹션 ── */
+    .meal-section { margin: 0 16px 14px; }
+    .meal-header { display: flex; align-items: center; justify-content: space-between;
+                   padding: 10px 4px; }
+    .meal-title { font-size: 0.95rem; font-weight: 600; color: var(--gray-800);
+                  display: flex; align-items: center; gap: 6px; }
+    .add-btn { background: none; border: 1px solid var(--green-l); color: var(--green);
+               font-size: 0.78rem; font-weight: 600; padding: 5px 12px;
+               border-radius: 20px; cursor: pointer; }
+    .add-btn:active { background: var(--green-bg); }
+    .food-item { background: white; border-radius: 12px;
+                 padding: 12px 14px; margin-bottom: 8px;
+                 box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+                 display: flex; align-items: center; justify-content: space-between; }
+    .food-name { font-size: 0.95rem; font-weight: 500; }
+    .food-sub  { font-size: 0.75rem; color: var(--gray-400); margin-top: 2px; }
+    .food-right { text-align: right; }
+    .food-na  { font-size: 0.88rem; font-weight: 600; color: var(--red); }
+    .food-cal { font-size: 0.75rem; color: var(--gray-400); margin-top: 2px; }
+    .food-del { background: none; border: none; color: var(--gray-400);
+                font-size: 0.85rem; cursor: pointer; padding: 4px 6px;
+                border-radius: 6px; margin-left: 8px; }
+    .food-del:active { color: var(--red); background: var(--red-bg); }
+    .empty-meal { font-size: 0.82rem; color: var(--gray-400); padding: 8px 4px; }
+
+    /* ── 음식 추가 모달 ── */
+    .modal-overlay { display: none; position: fixed; inset: 0;
+                     background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; border-radius: 24px 24px 0 0; width: 100%;
+             max-width: 480px; margin: 0 auto; padding: 20px;
+             max-height: 92vh; overflow-y: auto; }
+    .modal-handle { width: 40px; height: 4px; background: var(--gray-200);
+                    border-radius: 2px; margin: 0 auto 16px; }
+    .modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; }
+
+    .search-input { width: 100%; border: 2px solid var(--gray-200); border-radius: 12px;
+                    padding: 12px 14px; font-size: 1rem; outline: none;
+                    color: var(--gray-800); }
+    .search-input:focus { border-color: var(--green-l); }
+
+    .autocomplete { background: white; border: 1px solid var(--gray-200);
+                    border-radius: 12px; margin-top: 6px; overflow: hidden;
+                    display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .autocomplete.show { display: block; }
+    .auto-item { padding: 12px 14px; cursor: pointer; border-bottom: 1px solid var(--gray-100);
+                 display: flex; justify-content: space-between; align-items: center; }
+    .auto-item:last-child { border-bottom: none; }
+    .auto-item:active { background: var(--gray-50); }
+    .auto-item-name { font-size: 0.9rem; font-weight: 500; }
+    .auto-item-info { font-size: 0.75rem; color: var(--gray-400); }
+    .auto-na { font-size: 0.78rem; color: var(--red); font-weight: 600; }
+
+    .custom-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--gray-100); }
+    .custom-title { font-size: 0.8rem; font-weight: 600; color: var(--gray-400);
+                    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .field-group label { font-size: 0.78rem; font-weight: 600; color: var(--gray-600);
+                         display: block; margin-bottom: 4px; }
+    .field-group input { width: 100%; border: 2px solid var(--gray-200); border-radius: 10px;
+                         padding: 10px 12px; font-size: 0.95rem; outline: none; }
+    .field-group input:focus { border-color: var(--green-l); }
+    .field-group.full { grid-column: 1 / -1; }
+
+    .meal-select { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+    .meal-opt { border: 2px solid var(--gray-200); border-radius: 10px; padding: 8px 4px;
+                text-align: center; font-size: 0.82rem; cursor: pointer; background: white; }
+    .meal-opt.selected { border-color: var(--green-l); background: var(--green-bg);
+                         color: var(--green); font-weight: 600; }
+
+    .modal-save-btn { width: 100%; background: var(--green); color: white; border: none;
+                      border-radius: 14px; padding: 15px; font-size: 0.95rem;
+                      font-weight: 600; cursor: pointer; margin-top: 16px; }
+    .modal-save-btn:active { background: #064e3b; }
+
+    /* ── 하단 네비 ── */
+    .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+                  width: 100%; max-width: 480px; background: white;
+                  border-top: 1px solid var(--gray-200); display: flex; }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center;
+               padding: 10px 8px; background: none; border: none; cursor: pointer;
+               color: var(--gray-400); font-size: 0.7rem; gap: 2px; text-decoration: none; }
+    .nav-btn.active { color: var(--green); }
+    .nav-icon { font-size: 1.3rem; }
+    .bottom-pad { height: 70px; }
+
+    /* ── 토스트 ── */
+    #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+             background: var(--gray-800); color: white; padding: 10px 20px;
+             border-radius: 20px; font-size: 0.88rem; opacity: 0;
+             transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+             white-space: nowrap; z-index: 300; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🥗 식사 기록</h1>
+  <div style="width:36px"></div>
+</header>
+
+<!-- 날짜 네비게이션 -->
+<div class="date-nav">
+  <button class="date-btn" onclick="changeDate(-1)">‹</button>
+  <span id="date-display"></span>
+  <button class="date-btn" onclick="changeDate(1)">›</button>
+</div>
+
+<!-- 영양 요약 -->
+<div class="sodium-summary">
+  <div class="summary-row">
+    <div>
+      <div class="summary-title">오늘 나트륨</div>
+      <div><span class="sodium-number" id="total-na">0</span><span class="sodium-unit">mg</span>
+           <span id="na-limit-text" style="font-size:0.75rem; color:var(--gray-400)"> / 2,000mg (WHO 권장)</span></div>
+    </div>
+    <div class="summary-value" id="na-percent"></div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="na-progress" style="width:0%"></div>
+  </div>
+  <div class="nutrient-grid">
+    <div class="nutrient-box">
+      <div class="val" id="total-cal">0</div>
+      <div class="lbl">kcal 칼로리</div>
+    </div>
+    <div class="nutrient-box">
+      <div class="val" id="total-sugar">0g</div>
+      <div class="lbl">당류</div>
+    </div>
+    <div class="nutrient-box">
+      <div class="val" id="total-fat">0g</div>
+      <div class="lbl">지방</div>
+    </div>
+  </div>
+</div>
+
+<!-- 식사 섹션들 -->
+<div id="meals-container"></div>
+
+<div class="bottom-pad"></div>
+
+<!-- 하단 네비 -->
+<nav class="bottom-nav">
+  <a href="index.html" class="nav-btn"><span class="nav-icon">❤️</span><span>혈압</span></a>
+  <button class="nav-btn active"><span class="nav-icon">🥗</span><span>식사</span></button>
+  <a href="dashboard.html" class="nav-btn"><span class="nav-icon">📊</span><span>대시보드</span></a>
+</nav>
+
+<!-- 음식 추가 모달 -->
+<div class="modal-overlay" id="modal" onclick="closeModalIf(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">음식 추가</div>
+
+    <div class="meal-select" id="meal-select">
+      <button class="meal-opt selected" data-meal="아침" onclick="selectMeal(this)">🌅 아침</button>
+      <button class="meal-opt" data-meal="점심" onclick="selectMeal(this)">☀️ 점심</button>
+      <button class="meal-opt" data-meal="저녁" onclick="selectMeal(this)">🌙 저녁</button>
+      <button class="meal-opt" data-meal="간식" onclick="selectMeal(this)">🍎 간식</button>
+    </div>
+
+    <input type="text" id="food-search" class="search-input"
+           placeholder="음식 이름 검색 (예: 김치찌개, 라면)"
+           oninput="onSearch(this.value)" autocomplete="off">
+    <div class="autocomplete" id="autocomplete"></div>
+
+    <div class="custom-section">
+      <div class="custom-title">직접 입력 또는 수정</div>
+      <div class="field-row">
+        <div class="field-group full">
+          <label>음식 이름 *</label>
+          <input type="text" id="f-name" placeholder="음식 이름">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>나트륨 (mg) *</label>
+          <input type="number" id="f-na" inputmode="numeric" placeholder="0">
+        </div>
+        <div class="field-group">
+          <label>칼로리 (kcal)</label>
+          <input type="number" id="f-cal" inputmode="numeric" placeholder="0">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>탄수화물 (g)</label>
+          <input type="number" id="f-carb" inputmode="decimal" placeholder="0">
+        </div>
+        <div class="field-group">
+          <label>지방 (g)</label>
+          <input type="number" id="f-fat" inputmode="decimal" placeholder="0">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>당류 (g)</label>
+          <input type="number" id="f-sugar" inputmode="decimal" placeholder="0">
+        </div>
+        <div class="field-group">
+          <label>단백질 (g)</label>
+          <input type="number" id="f-protein" inputmode="decimal" placeholder="0">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group full">
+          <label>메모</label>
+          <input type="text" id="f-notes" placeholder="예: 2인분, 소량">
+        </div>
+      </div>
+    </div>
+
+    <button class="modal-save-btn" onclick="saveFood()">추가하기</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="foods-db.js"></script>
+<script>
+const FOOD_KEY = 'food_records';
+const API_KEY  = 'bp_api_url';
+const MEALS    = ['아침', '점심', '저녁', '간식'];
+const MEAL_EMOJI = { '아침': '🌅', '점심': '☀️', '저녁': '🌙', '간식': '🍎' };
+
+let currentDate = new Date();
+let selectedMeal = '아침';
+
+// ── 날짜 유틸 ──
+function dateKey(d) {
+  return d.toISOString().slice(0, 10);
+}
+function displayDate(d) {
+  const today = dateKey(new Date());
+  const key   = dateKey(d);
+  const label = key === today ? '오늘' : key === yesterday() ? '어제' : '';
+  return d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
+         + (label ? ` (${label})` : '');
+}
+function yesterday() {
+  const d = new Date(); d.setDate(d.getDate() - 1);
+  return dateKey(d);
+}
+function changeDate(dir) {
+  currentDate.setDate(currentDate.getDate() + dir);
+  renderPage();
+}
+
+// ── 로컬 스토리지 ──
+function getRecords() {
+  try { return JSON.parse(localStorage.getItem(FOOD_KEY) || '[]'); } catch { return []; }
+}
+function saveRecords(r) { localStorage.setItem(FOOD_KEY, JSON.stringify(r)); }
+
+function getTodayRecords() {
+  const key = dateKey(currentDate);
+  return getRecords().filter(r => r.datetime.startsWith(key));
+}
+
+// ── API 동기화 ──
+async function syncFood(record) {
+  const url = localStorage.getItem(API_KEY);
+  if (!url) return false;
+  const p = new URLSearchParams({ sheet: 'food', action: 'write', ...record });
+  try {
+    const res = await fetch(`${url}?${p}`);
+    const d = await res.json();
+    return d.ok;
+  } catch { return false; }
+}
+
+async function deleteFromSheet(record) {
+  const url = localStorage.getItem(API_KEY);
+  if (!url) return;
+  const p = new URLSearchParams({ sheet: 'food', action: 'delete',
+    datetime: record.datetime, food_name: record.food_name });
+  try { await fetch(`${url}?${p}`); } catch {}
+}
+
+// ── 모달 ──
+function openModal(meal) {
+  selectedMeal = meal || '점심';
+  document.querySelectorAll('.meal-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.meal === selectedMeal);
+  });
+  clearForm();
+  document.getElementById('modal').classList.add('open');
+  setTimeout(() => document.getElementById('food-search').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('autocomplete').classList.remove('show');
+}
+
+function closeModalIf(e) {
+  if (e.target === document.getElementById('modal')) closeModal();
+}
+
+function selectMeal(el) {
+  selectedMeal = el.dataset.meal;
+  document.querySelectorAll('.meal-opt').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function clearForm() {
+  ['food-search','f-name','f-na','f-cal','f-carb','f-fat','f-sugar','f-protein','f-notes']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('autocomplete').classList.remove('show');
+}
+
+// ── 검색 ──
+function onSearch(q) {
+  const ac = document.getElementById('autocomplete');
+  const results = searchFoods(q);
+  if (results.length === 0) { ac.classList.remove('show'); return; }
+  ac.innerHTML = results.map(f => `
+    <div class="auto-item" onclick="selectFood(${JSON.stringify(f).replace(/"/g,'&quot;')})">
+      <div>
+        <div class="auto-item-name">${f.name}</div>
+        <div class="auto-item-info">${f.unit} · ${f.serving}g · ${f.cal}kcal</div>
+      </div>
+      <div class="auto-na">Na ${f.na}mg</div>
+    </div>`).join('');
+  ac.classList.add('show');
+}
+
+function selectFood(f) {
+  document.getElementById('f-name').value    = f.name;
+  document.getElementById('f-na').value      = f.na;
+  document.getElementById('f-cal').value     = f.cal;
+  document.getElementById('f-carb').value    = f.carb;
+  document.getElementById('f-fat').value     = f.fat;
+  document.getElementById('f-sugar').value   = f.sugar;
+  document.getElementById('f-protein').value = f.protein;
+  document.getElementById('food-search').value = f.name;
+  document.getElementById('autocomplete').classList.remove('show');
+}
+
+// ── 저장 ──
+async function saveFood() {
+  const name = document.getElementById('f-name').value.trim();
+  const na   = parseFloat(document.getElementById('f-na').value);
+  if (!name)      return showToast('음식 이름을 입력하세요');
+  if (isNaN(na))  return showToast('나트륨 수치를 입력하세요');
+
+  const record = {
+    datetime: currentDate.toISOString().slice(0, 10)
+              + 'T' + new Date().toTimeString().slice(0, 8),
+    meal:      selectedMeal,
+    food_name: name,
+    amount_g:  0,
+    calories:  parseFloat(document.getElementById('f-cal').value)     || 0,
+    sodium:    na,
+    carbs:     parseFloat(document.getElementById('f-carb').value)    || 0,
+    fat:       parseFloat(document.getElementById('f-fat').value)      || 0,
+    sugar:     parseFloat(document.getElementById('f-sugar').value)   || 0,
+    protein:   parseFloat(document.getElementById('f-protein').value) || 0,
+    notes:     document.getElementById('f-notes').value.trim(),
+    synced:    false
+  };
+
+  const records = getRecords();
+  records.push(record);
+  saveRecords(records);
+  closeModal();
+  renderPage();
+  showToast(`${name} 추가됨`);
+
+  // 비동기 동기화
+  const ok = await syncFood(record);
+  if (ok) {
+    records[records.length - 1].synced = true;
+    // 마지막 기록 찾아 업데이트
+    const all = getRecords();
+    const idx = all.findIndex(r => r.datetime === record.datetime && r.food_name === record.food_name);
+    if (idx >= 0) { all[idx].synced = true; saveRecords(all); }
+  }
+}
+
+// ── 삭제 ──
+function deleteFood(datetime, foodName) {
+  if (!confirm(`'${foodName}' 기록을 삭제할까요?`)) return;
+  const records = getRecords().filter(r => !(r.datetime === datetime && r.food_name === foodName));
+  saveRecords(records);
+  renderPage();
+  showToast('삭제되었습니다');
+  const url = localStorage.getItem(API_KEY);
+  if (url) deleteFromSheet({ datetime, food_name: foodName });
+}
+
+// ── 렌더링 ──
+function renderPage() {
+  document.getElementById('date-display').textContent = displayDate(currentDate);
+  const records = getTodayRecords();
+
+  // 영양 합계
+  const totals = records.reduce((acc, r) => {
+    acc.na    += r.sodium   || 0;
+    acc.cal   += r.calories || 0;
+    acc.sugar += r.sugar    || 0;
+    acc.fat   += r.fat      || 0;
+    return acc;
+  }, { na: 0, cal: 0, sugar: 0, fat: 0 });
+
+  document.getElementById('total-na').textContent    = Math.round(totals.na).toLocaleString();
+  document.getElementById('total-cal').textContent   = Math.round(totals.cal);
+  document.getElementById('total-sugar').textContent = Math.round(totals.sugar) + 'g';
+  document.getElementById('total-fat').textContent   = Math.round(totals.fat) + 'g';
+
+  const pct = Math.min((totals.na / 2000) * 100, 100);
+  const bar = document.getElementById('na-progress');
+  bar.style.width = pct + '%';
+  bar.className = 'progress-fill' + (pct >= 100 ? ' danger' : pct >= 70 ? ' warn' : '');
+  document.getElementById('na-percent').textContent = Math.round(pct) + '%';
+
+  // 식사별 렌더링
+  const container = document.getElementById('meals-container');
+  container.innerHTML = MEALS.map(meal => {
+    const items = records.filter(r => r.meal === meal);
+    const mealNa = items.reduce((s, r) => s + (r.sodium || 0), 0);
+    return `
+      <div class="meal-section">
+        <div class="meal-header">
+          <div class="meal-title">
+            ${MEAL_EMOJI[meal]} ${meal}
+            ${mealNa > 0 ? `<span style="font-size:0.75rem; color:var(--red); font-weight:400">Na ${Math.round(mealNa)}mg</span>` : ''}
+          </div>
+          <button class="add-btn" onclick="openModal('${meal}')">+ 추가</button>
+        </div>
+        ${items.length === 0
+          ? `<div class="empty-meal">기록 없음</div>`
+          : items.map(r => `
+            <div class="food-item">
+              <div>
+                <div class="food-name">${r.food_name}</div>
+                <div class="food-sub">${r.notes || ''}</div>
+              </div>
+              <div class="food-right">
+                <div class="food-na">Na ${Math.round(r.sodium)}mg</div>
+                <div class="food-cal">${Math.round(r.calories)}kcal</div>
+              </div>
+              <button class="food-del" onclick="deleteFood('${r.datetime}','${r.food_name.replace(/'/g,"\\'")}')">✕</button>
+            </div>`).join('')}
+      </div>`;
+  }).join('');
+}
+
+// ── 토스트 ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── 초기화 ──
+document.addEventListener('DOMContentLoaded', () => {
+  renderPage();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+});
+</script>
+</body>
+</html>

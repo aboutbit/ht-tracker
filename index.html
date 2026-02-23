@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1e40af">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="혈압">
+  <title>혈압 기록기</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #1e40af;
+      --blue-light: #3b82f6;
+      --green: #16a34a;
+      --yellow: #d97706;
+      --orange: #ea580c;
+      --red: #dc2626;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-400: #94a3b8;
+      --gray-600: #475569;
+      --gray-800: #1e293b;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── 헤더 ── */
+    header {
+      background: var(--blue);
+      color: white;
+      padding: 16px 20px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+    .header-actions { display: flex; gap: 8px; }
+    .icon-btn {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: white;
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .icon-btn:active { background: rgba(255,255,255,0.3); }
+
+    /* ── 동기화 상태 바 ── */
+    #sync-bar {
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 0.78rem;
+      padding: 6px 20px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+    #sync-bar.show { display: flex; }
+    #sync-bar.synced { background: #d1fae5; color: #065f46; }
+    #sync-bar.error { background: #fee2e2; color: #991b1b; }
+
+    /* ── 입력 카드 ── */
+    .card {
+      background: white;
+      border-radius: 16px;
+      margin: 16px;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    /* ── BP 입력 ── */
+    .bp-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .input-group label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+    .input-group input {
+      border: 2px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 14px 12px;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--gray-800);
+      text-align: center;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    .input-group input:focus { border-color: var(--blue-light); }
+    .input-group input::placeholder { color: var(--gray-200); font-weight: 400; font-size: 1.2rem; }
+
+    .input-unit {
+      font-size: 0.72rem;
+      color: var(--gray-400);
+      text-align: center;
+    }
+
+    .row-inputs {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .input-group input.small {
+      font-size: 1.2rem;
+      padding: 12px 10px;
+    }
+    .input-group input.note {
+      font-size: 0.95rem;
+      text-align: left;
+      padding: 12px 14px;
+    }
+
+    /* ── 날짜/시간 ── */
+    .datetime-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    #datetime-display {
+      font-size: 0.9rem;
+      color: var(--gray-600);
+    }
+    .text-btn {
+      background: none;
+      border: none;
+      color: var(--blue-light);
+      font-size: 0.82rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .text-btn:active { background: var(--gray-100); }
+
+    /* ── BP 분류 뱃지 ── */
+    #bp-badge {
+      display: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    /* ── 저장 버튼 ── */
+    #save-btn {
+      width: 100%;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    #save-btn:active { background: #1e3a8a; transform: scale(0.98); }
+    #save-btn:disabled { background: var(--gray-200); color: var(--gray-400); cursor: not-allowed; transform: none; }
+
+    /* ── 최근 기록 ── */
+    #records-list { display: flex; flex-direction: column; gap: 10px; }
+    .record-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      position: relative;
+      overflow: hidden;
+    }
+    .record-accent {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+    }
+    .record-left { padding-left: 8px; }
+    .record-bp {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--gray-800);
+    }
+    .record-bp span { font-size: 0.85rem; font-weight: 400; color: var(--gray-400); }
+    .record-meta {
+      font-size: 0.78rem;
+      color: var(--gray-400);
+      margin-top: 2px;
+    }
+    .record-right { text-align: right; }
+    .record-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 10px;
+    }
+    .record-pulse {
+      font-size: 0.78rem;
+      color: var(--gray-400);
+      margin-top: 3px;
+    }
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--gray-400);
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 6px;
+      margin-left: 8px;
+    }
+    .delete-btn:active { color: var(--red); background: #fee2e2; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--gray-400);
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+    /* ── 하단 네비게이션 ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: white;
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--gray-400);
+      font-size: 0.7rem;
+      gap: 2px;
+      text-decoration: none;
+    }
+    .nav-btn.active { color: var(--blue); }
+    .nav-btn .nav-icon { font-size: 1.3rem; }
+
+    /* ── 설정 화면 ── */
+    #settings-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--gray-50);
+      z-index: 200;
+      overflow-y: auto;
+    }
+    .settings-header {
+      background: var(--blue);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .settings-header h2 { font-size: 1.1rem; font-weight: 600; }
+    .settings-body { padding: 20px; }
+    .settings-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .settings-input {
+      width: 100%;
+      border: 2px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.9rem;
+      outline: none;
+      color: var(--gray-800);
+    }
+    .settings-input:focus { border-color: var(--blue-light); }
+    .settings-hint {
+      font-size: 0.78rem;
+      color: var(--gray-400);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+    .settings-save-btn {
+      width: 100%;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    .settings-save-btn:active { background: #1e3a8a; }
+    .setup-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .setup-banner p { font-size: 0.85rem; color: #1e40af; line-height: 1.5; }
+    .setup-banner strong { font-weight: 600; }
+
+    /* ── 토스트 ── */
+    #toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--gray-800);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.88rem;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 300;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* 하단 여백 (nav 높이) */
+    .bottom-pad { height: 70px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>❤️ 혈압 기록기</h1>
+  <div class="header-actions">
+    <button class="icon-btn" onclick="openSettings()" title="설정">⚙️</button>
+  </div>
+</header>
+
+<div id="sync-bar"></div>
+
+<!-- 입력 카드 -->
+<div class="card">
+  <div class="card-title">혈압 측정값 입력</div>
+
+  <div class="bp-inputs">
+    <div class="input-group">
+      <label>수축기 (SBP)</label>
+      <input type="number" id="sbp" inputmode="numeric" placeholder="120" min="60" max="250" oninput="onBpInput()">
+      <div class="input-unit">mmHg</div>
+    </div>
+    <div class="input-group">
+      <label>이완기 (DBP)</label>
+      <input type="number" id="dbp" inputmode="numeric" placeholder="80" min="40" max="150" oninput="onBpInput()">
+      <div class="input-unit">mmHg</div>
+    </div>
+  </div>
+
+  <div class="row-inputs">
+    <div class="input-group">
+      <label>맥박 (선택)</label>
+      <input type="number" id="pulse" inputmode="numeric" placeholder="72" class="small" min="30" max="220">
+      <div class="input-unit">bpm</div>
+    </div>
+    <div class="input-group">
+      <label>메모 (선택)</label>
+      <input type="text" id="notes" placeholder="운동 전, 아침..." class="note">
+    </div>
+  </div>
+
+  <div class="datetime-row">
+    <span id="datetime-display"></span>
+    <button class="text-btn" onclick="setNow()">지금으로</button>
+  </div>
+
+  <div id="bp-badge"></div>
+
+  <button id="save-btn" onclick="saveRecord()">저장하기</button>
+</div>
+
+<!-- 최근 기록 -->
+<div class="card" style="padding-bottom: 12px;">
+  <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+    <span>최근 기록</span>
+    <a href="dashboard.html" style="color: var(--blue-light); font-size: 0.78rem; text-decoration: none;">전체 보기 →</a>
+  </div>
+  <div id="records-list">
+    <div class="empty-state">
+      <div class="icon">📋</div>
+      <div>아직 기록이 없습니다</div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-pad"></div>
+
+<!-- 하단 네비게이션 -->
+<nav class="bottom-nav">
+  <button class="nav-btn active">
+    <span class="nav-icon">❤️</span>
+    <span>혈압</span>
+  </button>
+  <a href="food.html" class="nav-btn">
+    <span class="nav-icon">🥗</span>
+    <span>식사</span>
+  </a>
+  <a href="dashboard.html" class="nav-btn">
+    <span class="nav-icon">📊</span>
+    <span>대시보드</span>
+  </a>
+</nav>
+
+<!-- 설정 화면 -->
+<div id="settings-screen">
+  <div class="settings-header">
+    <button class="icon-btn" onclick="closeSettings()">←</button>
+    <h2>설정</h2>
+  </div>
+  <div class="settings-body">
+    <div class="setup-banner">
+      <p>
+        <strong>첫 설정 안내</strong><br>
+        Google Sheets에서 Apps Script를 배포한 뒤,
+        발급된 웹 앱 URL을 아래에 입력하세요.<br>
+        자세한 방법은 README.md를 참고하세요.
+      </p>
+    </div>
+    <label class="settings-label">Apps Script 웹 앱 URL</label>
+    <input type="url" id="api-url-input" class="settings-input"
+      placeholder="https://script.google.com/macros/s/...">
+    <div class="settings-hint">
+      Google Apps Script 배포 후 받는 URL입니다.<br>
+      이 URL을 통해 Google Sheets에 데이터가 저장됩니다.
+    </div>
+    <button class="settings-save-btn" onclick="saveSettings()">저장</button>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div id="toast"></div>
+
+<script>
+// ── 상수 ──
+const STORAGE_KEY = 'bp_records';
+const API_URL_KEY = 'bp_api_url';
+const PENDING_KEY = 'bp_pending';
+
+// ── 혈압 분류 ──
+function classifyBP(sbp, dbp) {
+  if (sbp > 180 || dbp > 120) return { label: '고혈압 위기', color: '#7f1d1d', bg: '#fee2e2', accent: '#dc2626' };
+  if (sbp >= 140 || dbp >= 90)  return { label: '고혈압 2단계', color: '#991b1b', bg: '#fee2e2', accent: '#ef4444' };
+  if (sbp >= 130 || dbp >= 80)  return { label: '고혈압 1단계', color: '#9a3412', bg: '#ffedd5', accent: '#f97316' };
+  if (sbp >= 120 && dbp < 80)   return { label: '주의혈압', color: '#92400e', bg: '#fef3c7', accent: '#f59e0b' };
+  return { label: '정상', color: '#065f46', bg: '#d1fae5', accent: '#10b981' };
+}
+
+// ── 날짜 포맷 ──
+function formatDatetime(isoStr) {
+  const d = new Date(isoStr);
+  const pad = n => String(n).padStart(2, '0');
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hour = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  return `${month}/${day} ${hour}:${min}`;
+}
+
+function formatDatetimeDisplay(isoStr) {
+  const d = new Date(isoStr);
+  return d.toLocaleString('ko-KR', {
+    month: 'numeric', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+    hour12: false
+  });
+}
+
+// ── 현재 날짜 ──
+let currentDatetime = new Date().toISOString();
+
+function setNow() {
+  currentDatetime = new Date().toISOString();
+  document.getElementById('datetime-display').textContent = formatDatetimeDisplay(currentDatetime);
+}
+
+// ── BP 입력 시 분류 표시 ──
+function onBpInput() {
+  const sbp = parseInt(document.getElementById('sbp').value);
+  const dbp = parseInt(document.getElementById('dbp').value);
+  const badge = document.getElementById('bp-badge');
+
+  if (sbp >= 60 && dbp >= 40) {
+    const cls = classifyBP(sbp, dbp);
+    badge.style.display = 'block';
+    badge.style.background = cls.bg;
+    badge.style.color = cls.color;
+    badge.textContent = cls.label;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── 로컬 스토리지 ──
+function getRecords() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveRecords(records) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+function getPending() {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function savePending(pending) {
+  localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+}
+
+// ── API 호출 ──
+async function syncToSheet(record) {
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) return false;
+
+  const params = new URLSearchParams({
+    action: 'write',
+    datetime: record.datetime,
+    systolic: record.systolic,
+    diastolic: record.diastolic,
+    pulse: record.pulse || '',
+    notes: record.notes || ''
+  });
+
+  try {
+    const res = await fetch(`${apiUrl}?${params}`, { method: 'GET' });
+    const data = await res.json();
+    return data.ok === true;
+  } catch {
+    return false;
+  }
+}
+
+async function deleteFromSheet(datetime) {
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) return false;
+
+  const params = new URLSearchParams({ action: 'delete', datetime });
+  try {
+    const res = await fetch(`${apiUrl}?${params}`, { method: 'GET' });
+    const data = await res.json();
+    return data.ok === true;
+  } catch {
+    return false;
+  }
+}
+
+// ── 동기화 상태 표시 ──
+function showSyncBar(msg, type = '') {
+  const bar = document.getElementById('sync-bar');
+  bar.textContent = msg;
+  bar.className = 'show' + (type ? ' ' + type : '');
+  if (type === 'synced') {
+    setTimeout(() => { bar.className = ''; }, 3000);
+  }
+}
+
+// ── 저장 ──
+async function saveRecord() {
+  const sbp = parseInt(document.getElementById('sbp').value);
+  const dbp = parseInt(document.getElementById('dbp').value);
+  const pulse = parseInt(document.getElementById('pulse').value) || null;
+  const notes = document.getElementById('notes').value.trim();
+
+  if (!sbp || sbp < 60 || sbp > 250) return showToast('올바른 수축기 값을 입력하세요 (60-250)');
+  if (!dbp || dbp < 40 || dbp > 150) return showToast('올바른 이완기 값을 입력하세요 (40-150)');
+
+  const record = {
+    datetime: currentDatetime,
+    systolic: sbp,
+    diastolic: dbp,
+    pulse,
+    notes,
+    synced: false
+  };
+
+  // 1. 로컬 저장
+  const records = getRecords();
+  records.unshift(record);
+  saveRecords(records);
+
+  // 2. 폼 초기화
+  document.getElementById('sbp').value = '';
+  document.getElementById('dbp').value = '';
+  document.getElementById('pulse').value = '';
+  document.getElementById('notes').value = '';
+  document.getElementById('bp-badge').style.display = 'none';
+  setNow();
+  renderRecords();
+  showToast('저장되었습니다');
+
+  // 3. 동기화 시도
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) {
+    showSyncBar('⚠️ Apps Script URL 미설정 — 설정에서 입력하세요');
+    return;
+  }
+
+  showSyncBar('☁️ 동기화 중...');
+  const ok = await syncToSheet(record);
+  if (ok) {
+    records[0].synced = true;
+    saveRecords(records);
+    renderRecords();
+    showSyncBar('✓ 동기화 완료', 'synced');
+  } else {
+    // 보류 큐에 추가
+    const pending = getPending();
+    pending.push(record);
+    savePending(pending);
+    showSyncBar('⚠️ 동기화 실패 — 나중에 재시도됩니다', 'error');
+  }
+}
+
+// ── 수동 동기화 ──
+async function syncNow() {
+  const pending = getPending();
+  if (pending.length === 0) {
+    showToast('동기화할 항목이 없습니다');
+    return;
+  }
+
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) {
+    openSettings();
+    return;
+  }
+
+  showSyncBar(`☁️ ${pending.length}개 항목 동기화 중...`);
+  const failed = [];
+
+  for (const record of pending) {
+    const ok = await syncToSheet(record);
+    if (!ok) failed.push(record);
+  }
+
+  savePending(failed);
+
+  // 로컬 기록에도 synced 마킹
+  const records = getRecords();
+  for (const r of records) {
+    if (!r.synced && !failed.find(f => f.datetime === r.datetime)) {
+      r.synced = true;
+    }
+  }
+  saveRecords(records);
+  renderRecords();
+
+  if (failed.length === 0) {
+    showSyncBar(`✓ ${pending.length}개 동기화 완료`, 'synced');
+  } else {
+    showSyncBar(`⚠️ ${failed.length}개 실패, ${pending.length - failed.length}개 완료`, 'error');
+  }
+}
+
+// ── 기록 삭제 ──
+async function deleteRecord(datetime) {
+  if (!confirm('이 기록을 삭제할까요?')) return;
+
+  const records = getRecords().filter(r => r.datetime !== datetime);
+  saveRecords(records);
+  renderRecords();
+  showToast('삭제되었습니다');
+
+  // 시트에서도 삭제
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (apiUrl) {
+    deleteFromSheet(datetime);
+  }
+}
+
+// ── 기록 렌더링 ──
+function renderRecords() {
+  const records = getRecords().slice(0, 10); // 최근 10개
+  const container = document.getElementById('records-list');
+
+  if (records.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📋</div>
+        <div>아직 기록이 없습니다</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = records.map(r => {
+    const cls = classifyBP(r.systolic, r.diastolic);
+    const syncIcon = r.synced ? '☁️' : '⏳';
+    const pulseInfo = r.pulse ? `♥ ${r.pulse} bpm` : '';
+    const noteInfo = r.notes ? ` · ${r.notes}` : '';
+    return `
+      <div class="record-item">
+        <div class="record-accent" style="background:${cls.accent}"></div>
+        <div class="record-left">
+          <div class="record-bp">${r.systolic}<span>/</span>${r.diastolic} <span>mmHg</span></div>
+          <div class="record-meta">${formatDatetimeDisplay(r.datetime)}${noteInfo}</div>
+        </div>
+        <div class="record-right">
+          <div class="record-badge" style="background:${cls.bg}; color:${cls.color}">${cls.label}</div>
+          <div class="record-pulse">${pulseInfo} ${syncIcon}</div>
+        </div>
+        <button class="delete-btn" onclick="deleteRecord('${r.datetime}')" title="삭제">✕</button>
+      </div>`;
+  }).join('');
+}
+
+// ── 토스트 ──
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// ── 설정 ──
+function openSettings() {
+  const current = localStorage.getItem(API_URL_KEY) || '';
+  document.getElementById('api-url-input').value = current;
+  document.getElementById('settings-screen').style.display = 'block';
+}
+
+function closeSettings() {
+  document.getElementById('settings-screen').style.display = 'none';
+}
+
+function saveSettings() {
+  const url = document.getElementById('api-url-input').value.trim();
+  if (url && !url.startsWith('https://script.google.com')) {
+    showToast('올바른 Apps Script URL이 아닙니다');
+    return;
+  }
+  localStorage.setItem(API_URL_KEY, url);
+  closeSettings();
+  showToast('설정이 저장되었습니다');
+
+  // URL 새로 설정되면 pending 동기화 시도
+  if (url) syncNow();
+}
+
+// ── 초기화 ──
+function init() {
+  setNow();
+  renderRecords();
+
+  // 설정 안 되어 있으면 설정 화면 표시
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) {
+    setTimeout(openSettings, 500);
+  }
+
+  // 미동기화 항목 자동 재시도
+  const pending = getPending();
+  if (pending.length > 0 && apiUrl) {
+    showSyncBar(`⏳ 미동기화 ${pending.length}개 항목 있음 — 동기화 탭을 누르세요`);
+  }
+
+  // 서비스워커 등록
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

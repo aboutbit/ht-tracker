@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1e293b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>건강 대시보드</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #1e40af; --blue-l: #3b82f6;
+      --green: #065f46; --green-l: #10b981;
+      --red: #dc2626; --orange: #ea580c; --yellow: #d97706;
+      --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
+      --gray-400: #94a3b8; --gray-600: #475569; --gray-800: #1e293b;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: var(--gray-50); color: var(--gray-800);
+           min-height: 100vh; max-width: 480px; margin: 0 auto; }
+
+    header { background: var(--gray-800); color: white; padding: 16px 20px;
+             position: sticky; top: 0; z-index: 100;
+             display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+    .sync-btn { background: rgba(255,255,255,0.15); border: none; color: white;
+                padding: 6px 14px; border-radius: 20px; font-size: 0.8rem;
+                cursor: pointer; }
+    .sync-btn:active { background: rgba(255,255,255,0.3); }
+
+    /* ── 탭 ── */
+    .tabs { display: flex; background: white; border-bottom: 1px solid var(--gray-200);
+            position: sticky; top: 52px; z-index: 90; }
+    .tab { flex: 1; padding: 12px; text-align: center; font-size: 0.85rem;
+           font-weight: 500; cursor: pointer; color: var(--gray-400);
+           border-bottom: 2px solid transparent; background: none; border-top: none;
+           border-left: none; border-right: none; }
+    .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    /* ── 기간 필터 ── */
+    .range-bar { display: flex; gap: 8px; padding: 12px 16px;
+                 overflow-x: auto; scrollbar-width: none; }
+    .range-bar::-webkit-scrollbar { display: none; }
+    .range-pill { padding: 6px 14px; border-radius: 20px; font-size: 0.78rem;
+                  font-weight: 600; border: 1.5px solid var(--gray-200);
+                  background: white; cursor: pointer; white-space: nowrap;
+                  color: var(--gray-600); }
+    .range-pill.active { background: var(--blue); color: white; border-color: var(--blue); }
+    .tab-panel[data-tab="food"] .range-pill.active { background: var(--green); border-color: var(--green); }
+
+    /* ── 카드 ── */
+    .card { background: white; border-radius: 16px; margin: 0 16px 14px;
+            padding: 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .card-title { font-size: 0.78rem; font-weight: 600; color: var(--gray-400);
+                  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px; }
+
+    /* ── 통계 그리드 ── */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-box { background: var(--gray-50); border-radius: 12px; padding: 12px; }
+    .stat-label { font-size: 0.72rem; color: var(--gray-400); font-weight: 600;
+                  text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .stat-val { font-size: 1.4rem; font-weight: 700; }
+    .stat-sub { font-size: 0.75rem; color: var(--gray-400); margin-top: 2px; }
+
+    /* ── 차트 ── */
+    .chart-wrap { position: relative; height: 220px; }
+
+    /* ── 분류 범례 ── */
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--gray-600); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* ── 기록 테이블 ── */
+    .records-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .records-table th { text-align: left; padding: 6px 8px; color: var(--gray-400);
+                        font-weight: 600; font-size: 0.72rem;
+                        border-bottom: 1px solid var(--gray-200); }
+    .records-table td { padding: 8px; border-bottom: 1px solid var(--gray-100); }
+    .records-table tr:last-child td { border-bottom: none; }
+    .bp-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+
+    /* ── 나트륨 바 차트 ── */
+    .na-bars { display: flex; flex-direction: column; gap: 10px; }
+    .na-bar-row { display: flex; align-items: center; gap: 10px; }
+    .na-bar-label { font-size: 0.78rem; color: var(--gray-600); width: 36px; flex-shrink: 0; }
+    .na-bar-track { flex: 1; height: 12px; background: var(--gray-100); border-radius: 6px; overflow: hidden; }
+    .na-bar-fill { height: 100%; border-radius: 6px; transition: width 0.4s; }
+    .na-bar-val { font-size: 0.75rem; color: var(--gray-600); width: 58px; text-align: right; flex-shrink: 0; }
+
+    /* ── 음식 랭킹 ── */
+    .food-rank { display: flex; flex-direction: column; gap: 8px; }
+    .food-rank-item { display: flex; align-items: center; justify-content: space-between;
+                      padding: 10px 12px; background: var(--gray-50); border-radius: 10px; }
+    .food-rank-left { display: flex; align-items: center; gap: 10px; }
+    .rank-num { font-size: 0.75rem; font-weight: 700; color: var(--gray-400); width: 18px; }
+    .food-rank-name { font-size: 0.88rem; font-weight: 500; }
+    .food-rank-count { font-size: 0.72rem; color: var(--gray-400); }
+    .food-rank-na { font-size: 0.85rem; font-weight: 600; color: var(--red); }
+
+    /* ── 로딩/빈 상태 ── */
+    .loading { text-align: center; padding: 40px; color: var(--gray-400); }
+    .empty { text-align: center; padding: 30px; color: var(--gray-400); font-size: 0.88rem; }
+
+    /* ── 하단 네비 ── */
+    .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+                  width: 100%; max-width: 480px; background: white;
+                  border-top: 1px solid var(--gray-200); display: flex; }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center;
+               padding: 10px 8px; background: none; border: none; cursor: pointer;
+               color: var(--gray-400); font-size: 0.7rem; gap: 2px; text-decoration: none; }
+    .nav-btn.active { color: var(--gray-800); }
+    .nav-icon { font-size: 1.3rem; }
+    .bottom-pad { height: 70px; }
+
+    /* ── 탭 패널 ── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📊 건강 대시보드</h1>
+  <button class="sync-btn" onclick="loadAll()">↻ 새로고침</button>
+</header>
+
+<!-- 탭 -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('bp',this)">❤️ 혈압</button>
+  <button class="tab" onclick="switchTab('food',this)">🥗 영양</button>
+</div>
+
+<!-- 혈압 탭 -->
+<div class="tab-panel active" id="tab-bp">
+  <div class="range-bar">
+    <button class="range-pill active" onclick="setBPRange(7,this)">7일</button>
+    <button class="range-pill" onclick="setBPRange(30,this)">30일</button>
+    <button class="range-pill" onclick="setBPRange(90,this)">90일</button>
+    <button class="range-pill" onclick="setBPRange(9999,this)">전체</button>
+  </div>
+
+  <div id="bp-loading" class="loading">혈압 데이터 불러오는 중...</div>
+
+  <div id="bp-content" style="display:none">
+    <!-- 최근 혈압 -->
+    <div class="card">
+      <div class="card-title">최근 혈압</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-label">최근 수축기</div>
+          <div class="stat-val" id="last-sbp">—</div>
+          <div class="stat-sub">mmHg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">최근 이완기</div>
+          <div class="stat-val" id="last-dbp">—</div>
+          <div class="stat-sub">mmHg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">평균 수축기</div>
+          <div class="stat-val" id="avg-sbp">—</div>
+          <div class="stat-sub">mmHg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">평균 이완기</div>
+          <div class="stat-val" id="avg-dbp">—</div>
+          <div class="stat-sub">mmHg</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 혈압 추이 차트 -->
+    <div class="card">
+      <div class="card-title">혈압 추이</div>
+      <div class="chart-wrap"><canvas id="bp-chart"></canvas></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> 수축기</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> 이완기</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(239,68,68,0.2)"></div> 고혈압 기준선</div>
+      </div>
+    </div>
+
+    <!-- 분류 분포 -->
+    <div class="card">
+      <div class="card-title">분류 분포</div>
+      <div class="chart-wrap" style="height:180px"><canvas id="class-chart"></canvas></div>
+    </div>
+
+    <!-- 최근 기록 -->
+    <div class="card">
+      <div class="card-title">최근 기록</div>
+      <div id="bp-table-wrap" style="overflow-x:auto">
+        <table class="records-table">
+          <thead><tr><th>날짜</th><th>SBP</th><th>DBP</th><th>분류</th></tr></thead>
+          <tbody id="bp-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 영양 탭 -->
+<div class="tab-panel" id="tab-food">
+  <div class="range-bar">
+    <button class="range-pill active" onclick="setFoodRange(7,this)">7일</button>
+    <button class="range-pill" onclick="setFoodRange(30,this)">30일</button>
+    <button class="range-pill" onclick="setFoodRange(90,this)">90일</button>
+  </div>
+
+  <div id="food-loading" class="loading">식사 데이터 불러오는 중...</div>
+
+  <div id="food-content" style="display:none">
+    <!-- 기간 평균 -->
+    <div class="card">
+      <div class="card-title">일 평균 섭취</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-label">나트륨</div>
+          <div class="stat-val" id="avg-na" style="color:var(--red)">—</div>
+          <div class="stat-sub">mg / 2,000mg 권장</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">칼로리</div>
+          <div class="stat-val" id="avg-cal">—</div>
+          <div class="stat-sub">kcal</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">당류</div>
+          <div class="stat-val" id="avg-sugar">—</div>
+          <div class="stat-sub">g</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">지방</div>
+          <div class="stat-val" id="avg-fat">—</div>
+          <div class="stat-sub">g</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 일별 나트륨 추이 -->
+    <div class="card">
+      <div class="card-title">일별 나트륨 섭취 (mg)</div>
+      <div class="chart-wrap"><canvas id="na-chart"></canvas></div>
+    </div>
+
+    <!-- 일별 나트륨 바 -->
+    <div class="card">
+      <div class="card-title">최근 7일 나트륨</div>
+      <div class="na-bars" id="na-bars"></div>
+    </div>
+
+    <!-- 나트륨 TOP 10 음식 -->
+    <div class="card">
+      <div class="card-title">나트륨 높은 음식 TOP 10</div>
+      <div class="food-rank" id="food-rank"></div>
+    </div>
+
+    <!-- 칼로리 차트 -->
+    <div class="card">
+      <div class="card-title">일별 칼로리 (kcal)</div>
+      <div class="chart-wrap"><canvas id="cal-chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-pad"></div>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="nav-btn"><span class="nav-icon">❤️</span><span>혈압</span></a>
+  <a href="food.html" class="nav-btn"><span class="nav-icon">🥗</span><span>식사</span></a>
+  <button class="nav-btn active"><span class="nav-icon">📊</span><span>대시보드</span></button>
+</nav>
+
+<script>
+// ── 상태 ──
+let bpData   = [];
+let foodData = [];
+let bpRange   = 7;
+let foodRange = 7;
+let bpChart, classChart, naChart, calChart;
+const API_KEY = 'bp_api_url';
+
+// ── 탭 ──
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── 기간 ──
+function setBPRange(n, btn) {
+  bpRange = n;
+  document.querySelectorAll('#tab-bp .range-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderBP();
+}
+function setFoodRange(n, btn) {
+  foodRange = n;
+  document.querySelectorAll('#tab-food .range-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderFood();
+}
+
+// ── 데이터 로드 ──
+async function loadAll() {
+  const url = localStorage.getItem(API_KEY);
+
+  // 혈압
+  document.getElementById('bp-loading').style.display = 'block';
+  document.getElementById('bp-content').style.display = 'none';
+
+  // 식사
+  document.getElementById('food-loading').style.display = 'block';
+  document.getElementById('food-content').style.display = 'none';
+
+  if (!url) {
+    // 로컬 데이터만 사용
+    bpData   = JSON.parse(localStorage.getItem('bp_records') || '[]');
+    foodData = JSON.parse(localStorage.getItem('food_records') || '[]');
+    renderBP();
+    renderFood();
+    return;
+  }
+
+  try {
+    const [bpRes, foodRes] = await Promise.all([
+      fetch(`${url}?action=read`),
+      fetch(`${url}?sheet=food&action=read`)
+    ]);
+    const bpJson   = await bpRes.json();
+    const foodJson = await foodRes.json();
+
+    if (bpJson.ok)   bpData   = bpJson.data;
+    else             bpData   = JSON.parse(localStorage.getItem('bp_records') || '[]');
+    if (foodJson.ok) foodData = foodJson.data;
+    else             foodData = JSON.parse(localStorage.getItem('food_records') || '[]');
+  } catch {
+    bpData   = JSON.parse(localStorage.getItem('bp_records') || '[]');
+    foodData = JSON.parse(localStorage.getItem('food_records') || '[]');
+  }
+
+  renderBP();
+  renderFood();
+}
+
+// ── 혈압 분류 ──
+function classifyBP(sbp, dbp) {
+  if (sbp > 180 || dbp > 120) return { label: '위기',    color: '#7f1d1d', bg: '#fee2e2' };
+  if (sbp >= 140 || dbp >= 90) return { label: '고혈압2', color: '#991b1b', bg: '#fee2e2' };
+  if (sbp >= 130 || dbp >= 80) return { label: '고혈압1', color: '#9a3412', bg: '#ffedd5' };
+  if (sbp >= 120 && dbp < 80)  return { label: '주의',   color: '#92400e', bg: '#fef3c7' };
+  return                               { label: '정상',   color: '#065f46', bg: '#d1fae5' };
+}
+
+// ── 날짜 필터 ──
+function filterByDays(arr, days) {
+  if (days >= 9999) return arr;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return arr.filter(r => new Date(r.datetime) >= cutoff);
+}
+
+function dateLabel(isoStr) {
+  const d = new Date(isoStr);
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+// ── 날짜별 집계 ──
+function groupByDate(arr, field) {
+  const map = {};
+  arr.forEach(r => {
+    const key = r.datetime.slice(0, 10);
+    if (!map[key]) map[key] = { date: key, vals: [] };
+    map[key].vals.push(r[field] || 0);
+  });
+  return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function avg(arr) { return arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0; }
+function sum(arr) { return arr.reduce((a,b)=>a+b,0); }
+
+// ── 혈압 렌더링 ──
+function renderBP() {
+  const filtered = filterByDays([...bpData].sort((a,b) => new Date(a.datetime)-new Date(b.datetime)), bpRange);
+
+  document.getElementById('bp-loading').style.display = 'none';
+  document.getElementById('bp-content').style.display = 'block';
+
+  if (filtered.length === 0) {
+    document.getElementById('last-sbp').textContent = '—';
+    document.getElementById('last-dbp').textContent = '—';
+    document.getElementById('avg-sbp').textContent  = '—';
+    document.getElementById('avg-dbp').textContent  = '—';
+    document.getElementById('bp-tbody').innerHTML   = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:20px">기록 없음</td></tr>';
+    return;
+  }
+
+  const last = filtered[filtered.length - 1];
+  document.getElementById('last-sbp').textContent = last.systolic;
+  document.getElementById('last-dbp').textContent = last.diastolic;
+  document.getElementById('avg-sbp').textContent  = avg(filtered.map(r => r.systolic));
+  document.getElementById('avg-dbp').textContent  = avg(filtered.map(r => r.diastolic));
+
+  // 혈압 추이 차트
+  const labels = filtered.map(r => dateLabel(r.datetime));
+  const sbpVals = filtered.map(r => r.systolic);
+  const dbpVals = filtered.map(r => r.diastolic);
+
+  if (bpChart) bpChart.destroy();
+  bpChart = new Chart(document.getElementById('bp-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: '수축기', data: sbpVals, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)',
+          tension: 0.3, fill: false, pointRadius: filtered.length > 30 ? 0 : 4 },
+        { label: '이완기', data: dbpVals, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)',
+          tension: 0.3, fill: false, pointRadius: filtered.length > 30 ? 0 : 4 },
+        { label: '고혈압 기준(140)', data: Array(labels.length).fill(140),
+          borderColor: 'rgba(239,68,68,0.4)', borderDash: [5,5], pointRadius: 0,
+          fill: false, borderWidth: 1.5 },
+        { label: '정상 기준(120)', data: Array(labels.length).fill(120),
+          borderColor: 'rgba(251,191,36,0.4)', borderDash: [4,4], pointRadius: 0,
+          fill: false, borderWidth: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 50, max: Math.max(180, Math.max(...sbpVals) + 10),
+             grid: { color: 'rgba(0,0,0,0.05)' } },
+        x: { ticks: { maxTicksLimit: 8, maxRotation: 0 },
+             grid: { display: false } }
+      }
+    }
+  });
+
+  // 분류 도넛 차트
+  const counts = { '정상': 0, '주의': 0, '고혈압1': 0, '고혈압2': 0, '위기': 0 };
+  filtered.forEach(r => { counts[classifyBP(r.systolic, r.diastolic).label]++; });
+  const labels2 = Object.keys(counts).filter(k => counts[k] > 0);
+  const clsColors = { '정상':'#10b981','주의':'#f59e0b','고혈압1':'#f97316','고혈압2':'#ef4444','위기':'#7f1d1d' };
+
+  if (classChart) classChart.destroy();
+  classChart = new Chart(document.getElementById('class-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: labels2,
+      datasets: [{ data: labels2.map(k => counts[k]),
+                   backgroundColor: labels2.map(k => clsColors[k]),
+                   borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } },
+      cutout: '60%'
+    }
+  });
+
+  // 테이블 (최근 20개)
+  const recent = [...filtered].reverse().slice(0, 20);
+  document.getElementById('bp-tbody').innerHTML = recent.map(r => {
+    const cls = classifyBP(r.systolic, r.diastolic);
+    return `<tr>
+      <td>${dateLabel(r.datetime)}</td>
+      <td><strong>${r.systolic}</strong></td>
+      <td><strong>${r.diastolic}</strong></td>
+      <td><span class="bp-badge" style="background:${cls.bg};color:${cls.color}">${cls.label}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── 식사/영양 렌더링 ──
+function renderFood() {
+  const filtered = filterByDays([...foodData], foodRange);
+
+  document.getElementById('food-loading').style.display = 'none';
+  document.getElementById('food-content').style.display = 'block';
+
+  if (filtered.length === 0) {
+    document.getElementById('avg-na').textContent    = '—';
+    document.getElementById('avg-cal').textContent   = '—';
+    document.getElementById('avg-sugar').textContent = '—';
+    document.getElementById('avg-fat').textContent   = '—';
+    document.getElementById('na-bars').innerHTML     = '<div class="empty">기록 없음</div>';
+    document.getElementById('food-rank').innerHTML   = '<div class="empty">기록 없음</div>';
+    return;
+  }
+
+  // 날짜별 집계
+  const days = {};
+  filtered.forEach(r => {
+    const key = r.datetime.slice(0, 10);
+    if (!days[key]) days[key] = { na: 0, cal: 0, sugar: 0, fat: 0, carbs: 0, protein: 0 };
+    days[key].na     += r.sodium    || 0;
+    days[key].cal    += r.calories  || 0;
+    days[key].sugar  += r.sugar     || 0;
+    days[key].fat    += r.fat       || 0;
+    days[key].carbs  += r.carbs     || 0;
+    days[key].protein += r.protein  || 0;
+  });
+
+  const dayList = Object.entries(days).sort(([a],[b]) => a.localeCompare(b));
+  const n = dayList.length;
+
+  // 평균
+  document.getElementById('avg-na').textContent    = Math.round(sum(dayList.map(([,v])=>v.na))   / n).toLocaleString() + 'mg';
+  document.getElementById('avg-cal').textContent   = Math.round(sum(dayList.map(([,v])=>v.cal))  / n).toLocaleString();
+  document.getElementById('avg-sugar').textContent = Math.round(sum(dayList.map(([,v])=>v.sugar))/ n) + 'g';
+  document.getElementById('avg-fat').textContent   = Math.round(sum(dayList.map(([,v])=>v.fat))  / n) + 'g';
+
+  // 나트륨 라인 차트
+  const dLabels = dayList.map(([k]) => k.slice(5)); // MM-DD
+  const naVals  = dayList.map(([,v]) => Math.round(v.na));
+  const calVals = dayList.map(([,v]) => Math.round(v.cal));
+
+  if (naChart) naChart.destroy();
+  naChart = new Chart(document.getElementById('na-chart'), {
+    type: 'bar',
+    data: {
+      labels: dLabels,
+      datasets: [
+        { label: '나트륨', data: naVals, backgroundColor: naVals.map(v =>
+            v >= 2000 ? 'rgba(220,38,38,0.7)' : v >= 1500 ? 'rgba(234,88,12,0.7)' : 'rgba(59,130,246,0.6)'),
+          borderRadius: 6 },
+        { label: '권장(2000mg)', data: Array(dLabels.length).fill(2000),
+          type: 'line', borderColor: 'rgba(220,38,38,0.5)', borderDash: [5,4],
+          pointRadius: 0, fill: false, borderWidth: 1.5 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: 'rgba(0,0,0,0.05)' } },
+        x: { ticks: { maxTicksLimit: 10, maxRotation: 0 }, grid: { display: false } }
+      }
+    }
+  });
+
+  // 칼로리 차트
+  if (calChart) calChart.destroy();
+  calChart = new Chart(document.getElementById('cal-chart'), {
+    type: 'bar',
+    data: {
+      labels: dLabels,
+      datasets: [{ label: '칼로리', data: calVals,
+                   backgroundColor: 'rgba(16,185,129,0.6)', borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: 'rgba(0,0,0,0.05)' } },
+        x: { ticks: { maxTicksLimit: 10, maxRotation: 0 }, grid: { display: false } }
+      }
+    }
+  });
+
+  // 최근 7일 나트륨 바
+  const recent7 = dayList.slice(-7);
+  const maxNa   = Math.max(...recent7.map(([,v]) => v.na), 2000);
+  document.getElementById('na-bars').innerHTML = recent7.map(([k, v]) => {
+    const pct = Math.min((v.na / maxNa) * 100, 100);
+    const color = v.na >= 2000 ? '#dc2626' : v.na >= 1500 ? '#f97316' : '#3b82f6';
+    const label = k.slice(5); // MM-DD
+    return `
+      <div class="na-bar-row">
+        <div class="na-bar-label">${label}</div>
+        <div class="na-bar-track">
+          <div class="na-bar-fill" style="width:${pct}%; background:${color}"></div>
+        </div>
+        <div class="na-bar-val" style="color:${color}">${Math.round(v.na).toLocaleString()}mg</div>
+      </div>`;
+  }).join('');
+
+  // 나트륨 TOP 10 음식
+  const foodMap = {};
+  filtered.forEach(r => {
+    const k = r.food_name;
+    if (!foodMap[k]) foodMap[k] = { count: 0, totalNa: 0 };
+    foodMap[k].count++;
+    foodMap[k].totalNa += r.sodium || 0;
+  });
+  const top10 = Object.entries(foodMap)
+    .map(([name, v]) => ({ name, count: v.count, avgNa: Math.round(v.totalNa / v.count) }))
+    .sort((a, b) => b.avgNa - a.avgNa)
+    .slice(0, 10);
+
+  document.getElementById('food-rank').innerHTML = top10.length === 0
+    ? '<div class="empty">기록 없음</div>'
+    : top10.map((f, i) => `
+      <div class="food-rank-item">
+        <div class="food-rank-left">
+          <div class="rank-num">${i + 1}</div>
+          <div>
+            <div class="food-rank-name">${f.name}</div>
+            <div class="food-rank-count">${f.count}회 섭취</div>
+          </div>
+        </div>
+        <div class="food-rank-na">Na ${f.avgNa.toLocaleString()}mg</div>
+      </div>`).join('');
+}
+
+// ── 초기화 ──
+document.addEventListener('DOMContentLoaded', () => {
+  loadAll();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+});
+</script>
+</body>
+</html>
