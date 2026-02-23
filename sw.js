@@ -1,5 +1,5 @@
-const CACHE_NAME = 'bp-tracker-v1';
-const ASSETS = ['./index.html', './dashboard.html', './manifest.json'];
+const CACHE_NAME = 'bp-tracker-v2';
+const ASSETS = ['./index.html', './food.html', './dashboard.html', './manifest.json', './foods-db.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -18,9 +18,25 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Apps Script 요청은 캐시하지 않음 (항상 네트워크)
+  // Apps Script / 외부 CDN은 캐시 안 함
   if (e.request.url.includes('script.google.com')) return;
+  if (e.request.url.includes('cdn.jsdelivr.net')) return;
 
+  // JS 파일은 네트워크 우선 → 업데이트가 즉시 반영됨
+  if (e.request.url.endsWith('.js')) {
+    e.respondWith(
+      fetch(e.request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // 나머지는 캐시 우선
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
