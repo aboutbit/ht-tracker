@@ -750,24 +750,38 @@ async function restoreFromSheets() {
   if (!url) { showToast('혈압 앱 설정에서 URL을 먼저 입력하세요'); return; }
 
   showToast('복원 중...');
+  let text = '';
   try {
-    const res  = await fetch(`${url}?sheet=food`);
-    const json = await res.json();
-    if (!json.ok) { showToast('복원 실패: ' + json.error); return; }
-
-    const incoming = json.data || [];
-    if (incoming.length === 0) { showToast('시트에 식사 데이터가 없습니다'); return; }
-
-    const existing = getRecords();
-    const existSet = new Set(existing.map(r => r.datetime + r.food_name));
-    const added    = incoming.filter(r => !existSet.has(r.datetime + r.food_name))
-                             .map(r => ({ ...r, synced: true }));
-    saveRecords([...existing, ...added]);
-    renderPage();
-    showToast(`식사 ${added.length}건 복원됨 (기존 ${existing.length}건 유지)`);
+    const res = await fetch(`${url}?sheet=food&action=read`, {
+      method: 'GET', mode: 'cors', credentials: 'omit',
+      cache: 'no-cache', redirect: 'follow'
+    });
+    text = await res.text();
   } catch (e) {
-    showToast('복원 실패: 네트워크 오류');
+    alert('네트워크 오류\n\n' + e.message +
+          '\n\n확인 사항:\n· 인터넷 연결\n· Apps Script URL이 올바른지\n· Apps Script 액세스 권한이 "모든 사용자(익명 포함)"인지');
+    return;
   }
+
+  let json;
+  try { json = JSON.parse(text); }
+  catch {
+    alert('응답 형식 오류 (JSON이 아님)\n\nApps Script 웹 앱을 재배포하거나 액세스 권한을 확인하세요.\n\n응답 내용:\n' + text.slice(0, 300));
+    return;
+  }
+
+  if (!json.ok) { showToast('복원 실패: ' + json.error); return; }
+
+  const incoming = json.data || [];
+  if (incoming.length === 0) { showToast('시트에 식사 데이터가 없습니다'); return; }
+
+  const existing = getRecords();
+  const existSet = new Set(existing.map(r => r.datetime + r.food_name));
+  const added    = incoming.filter(r => !existSet.has(r.datetime + r.food_name))
+                           .map(r => ({ ...r, synced: true }));
+  saveRecords([...existing, ...added]);
+  renderPage();
+  showToast(`식사 ${added.length}건 복원됨 (기존 ${existing.length}건 유지)`);
 }
 
 // ── 토스트 ──

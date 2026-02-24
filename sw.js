@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bp-tracker-v16';
+const CACHE_NAME = 'bp-tracker-v17';
 const ASSETS = ['./index.html', './food.html', './exercise.html', './dashboard.html', './manifest.json', './foods-db.js'];
 
 self.addEventListener('install', e => {
