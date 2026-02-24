@@ -88,7 +88,8 @@
     .modal { background: white; border-radius: 24px 24px 0 0; width: 100%;
              max-width: 480px; margin: 0 auto; padding: 20px;
              max-height: 92vh; overflow-y: auto;
-             transition: transform 0.2s; touch-action: pan-y; }
+             transition: transform 0.2s;
+             overscroll-behavior: contain; }
     .modal-handle { width: 40px; height: 4px; background: var(--gray-200);
                     border-radius: 2px; margin: 0 auto 16px; cursor: grab; }
     .modal-handle-area { width: 100%; padding: 4px 0 12px; margin: -4px -20px 0;
@@ -364,6 +365,38 @@ async function deleteFromSheet(record) {
   try { await fetch(`${url}?${p}`); } catch {}
 }
 
+// ── 모달 스와이프: document 레벨에서 pull-to-refresh 완전 차단 ──
+let _swipeStartY = 0;
+
+function _swipeTouchStart(e) {
+  _swipeStartY = e.touches[0].clientY;
+}
+
+function _swipeTouchMove(e) {
+  const modalEl = document.querySelector('#modal .modal');
+  if (!modalEl) return;
+  // 모달 내부를 스크롤 중이면 자연스럽게 허용
+  if (modalEl.scrollTop > 0) return;
+  const dy = e.touches[0].clientY - _swipeStartY;
+  if (dy > 0) {
+    e.preventDefault(); // document 레벨에서 pull-to-refresh 차단
+    modalEl.style.transition = 'none';
+    modalEl.style.transform = `translateY(${dy}px)`;
+  }
+}
+
+function _swipeTouchEnd(e) {
+  const modalEl = document.querySelector('#modal .modal');
+  if (!modalEl) return;
+  const dy = e.changedTouches[0].clientY - _swipeStartY;
+  modalEl.style.transition = '';
+  if (dy > 80 && document.getElementById('modal').classList.contains('open')) {
+    closeModal();
+  } else {
+    modalEl.style.transform = '';
+  }
+}
+
 // ── 모달 ──
 function openModal(meal) {
   selectedMeal = meal || '점심';
@@ -372,61 +405,31 @@ function openModal(meal) {
   });
   clearForm();
   const overlay = document.getElementById('modal');
-  const modalEl = overlay.querySelector('.modal');
-  modalEl.style.transform = '';
+  overlay.querySelector('.modal').style.transform = '';
   overlay.classList.add('open');
-  document.body.style.overscrollBehavior = 'none'; // pull-to-refresh 차단
+  // document 레벨에서 pull-to-refresh 차단 리스너 등록
+  document.documentElement.style.overscrollBehavior = 'none';
+  document.addEventListener('touchstart', _swipeTouchStart, { passive: true });
+  document.addEventListener('touchmove',  _swipeTouchMove,  { passive: false });
+  document.addEventListener('touchend',   _swipeTouchEnd,   { passive: true });
   setTimeout(() => document.getElementById('food-search').focus(), 100);
 }
 
 function closeModal() {
+  const modalEl = document.querySelector('#modal .modal');
+  if (modalEl) modalEl.style.transform = '';
   document.getElementById('modal').classList.remove('open');
   document.getElementById('autocomplete').classList.remove('show');
-  document.body.style.overscrollBehavior = ''; // pull-to-refresh 복원
+  // 리스너 해제 & pull-to-refresh 복원
+  document.documentElement.style.overscrollBehavior = '';
+  document.removeEventListener('touchstart', _swipeTouchStart);
+  document.removeEventListener('touchmove',  _swipeTouchMove);
+  document.removeEventListener('touchend',   _swipeTouchEnd);
 }
 
 function closeModalIf(e) {
   if (e.target === document.getElementById('modal')) closeModal();
 }
-
-// ── 모달 스와이프 다운으로 닫기 ──
-(function() {
-  let startY = 0, isDragging = false;
-  document.addEventListener('DOMContentLoaded', () => {
-    const overlay = document.getElementById('modal');
-    const modalEl = overlay.querySelector('.modal');
-
-    modalEl.addEventListener('touchstart', e => {
-      // 스크롤 가능 영역이 최상단일 때만 드래그 허용
-      if (modalEl.scrollTop > 0) return;
-      startY = e.touches[0].clientY;
-      isDragging = true;
-      modalEl.style.transition = 'none';
-    }, { passive: true });
-
-    modalEl.addEventListener('touchmove', e => {
-      if (!isDragging) return;
-      if (modalEl.scrollTop > 0) { isDragging = false; return; }
-      const dy = e.touches[0].clientY - startY;
-      if (dy > 0) {
-        e.preventDefault(); // 브라우저 pull-to-refresh 차단
-        modalEl.style.transform = `translateY(${dy}px)`;
-      }
-    }, { passive: false });
-
-    modalEl.addEventListener('touchend', e => {
-      if (!isDragging) return;
-      isDragging = false;
-      modalEl.style.transition = '';
-      const dy = e.changedTouches[0].clientY - startY;
-      if (dy > 80) {
-        closeModal();
-      } else {
-        modalEl.style.transform = '';
-      }
-    });
-  });
-})();
 
 function selectMeal(el) {
   selectedMeal = el.dataset.meal;
