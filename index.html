@@ -484,9 +484,25 @@
       이 URL을 통해 Google Sheets에 데이터가 저장됩니다.
     </div>
     <button class="settings-save-btn" onclick="saveSettings()">저장</button>
-    <div style="font-size:0.78rem; color:var(--gray-400); margin-top:12px; line-height:1.5;">
-      저장 후 Google Sheets에서 데이터를 자동으로 불러옵니다.<br>
-      로컬 저장은 하지 않으며 항상 Google Sheets를 사용합니다.
+
+    <!-- URL 진단 -->
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--gray-200);">
+      <div style="font-size:0.8rem; font-weight:600; color:var(--gray-600); margin-bottom:8px;">
+        URL 진단
+      </div>
+      <div style="font-size:0.75rem; color:var(--gray-400); margin-bottom:8px; line-height:1.5;">
+        아래 버튼을 눌러 URL을 브라우저에서 직접 열어보세요.<br>
+        <strong style="color:var(--gray-600);">{"ok":true,"data":[...]}</strong> 형태가 보이면 정상입니다.
+      </div>
+      <button onclick="openTestUrl()"
+              style="width:100%; padding:10px; background:#7c3aed; color:white; border:none;
+                     border-radius:10px; font-size:0.85rem; font-weight:600; cursor:pointer;">
+        URL 직접 열기 (테스트)
+      </button>
+      <div style="font-size:0.72rem; color:var(--gray-400); margin-top:8px; line-height:1.5;">
+        ※ URL이 올바르고 JSON이 보인다면, Apps Script 코드를 아래 파일로 업데이트 후 재배포하세요:<br>
+        <code>execution/bp-tracker/apps-script.js</code>
+      </div>
     </div>
   </div>
 </div>
@@ -634,7 +650,11 @@ async function fetchFromSheets() {
       showSyncBar('❌ 서버 오류: ' + json.error, 'error');
     }
   } catch (e) {
-    showSyncBar('❌ 연결 실패 — 인터넷 연결 또는 URL을 확인하세요', 'error');
+    if (e.message === 'timeout') {
+      showSyncBar('❌ 응답 없음 — Apps Script 코드 업데이트 및 재배포 필요 (설정→URL 진단 참고)', 'error');
+    } else {
+      showSyncBar('❌ 연결 실패 — 설정에서 URL 직접 열기로 확인하세요', 'error');
+    }
   }
 }
 
@@ -766,6 +786,13 @@ function saveSettings() {
   closeSettings();
   showToast('설정이 저장되었습니다');
   if (url) fetchFromSheets();
+}
+
+function openTestUrl() {
+  const url = document.getElementById('api-url-input').value.trim()
+           || localStorage.getItem(API_URL_KEY) || '';
+  if (!url) { showToast('URL을 먼저 입력하세요'); return; }
+  window.open(url + '?sheet=bp&action=read', '_blank');
 }
 
 // ── 초기화 ──
