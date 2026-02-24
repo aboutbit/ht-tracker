@@ -562,7 +562,7 @@ function fmtServing(v) {
 
 // ── 수정 모달 열기 ──
 function openEditModal(datetime) {
-  const record = getRecords().find(r => r.datetime === datetime);
+  const record = allRecords.find(r => r.datetime === datetime);
   if (!record) return;
 
   selectedMeal = record.meal;
