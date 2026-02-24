@@ -642,6 +642,163 @@ const FOOD_DB = [
   { name: "탄산수(플레인, 500ml)",  cal: 0,   na: 20,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
   { name: "씨그램(탄산수, 355ml)",  cal: 0,   na: 15,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 355,  unit: "355ml캔" },
   { name: "페리에(330ml)",          cal: 0,   na: 10,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 330,  unit: "330ml" },
+
+  // ── 맥도날드 ──
+  { name: "빅맥(맥도날드)",              cal: 533, na: 1010, carb: 46, fat: 28, sugar: 9,  protein: 26, serving: 200, unit: "1개" },
+  { name: "불고기버거(맥도날드)",        cal: 398, na: 830,  carb: 50, fat: 14, sugar: 14, protein: 17, serving: 152, unit: "1개" },
+  { name: "맥스파이시 상하이버거",       cal: 565, na: 1000, carb: 51, fat: 28, sugar: 6,  protein: 24, serving: 218, unit: "1개" },
+  { name: "더블불고기버거(맥도날드)",    cal: 571, na: 1230, carb: 54, fat: 26, sugar: 17, protein: 30, serving: 245, unit: "1개" },
+  { name: "쿼터파운더 위드 치즈",        cal: 520, na: 1040, carb: 46, fat: 26, sugar: 9,  protein: 30, serving: 200, unit: "1개" },
+  { name: "더블쿼터파운더 위드 치즈",    cal: 745, na: 1280, carb: 47, fat: 42, sugar: 10, protein: 52, serving: 280, unit: "1개" },
+  { name: "맥치킨(맥도날드)",            cal: 388, na: 740,  carb: 40, fat: 18, sugar: 5,  protein: 17, serving: 165, unit: "1개" },
+  { name: "필레오피쉬(맥도날드)",        cal: 328, na: 700,  carb: 38, fat: 13, sugar: 6,  protein: 17, serving: 140, unit: "1개" },
+  { name: "에그 맥머핀",                 cal: 294, na: 730,  carb: 28, fat: 13, sugar: 3,  protein: 17, serving: 134, unit: "1개" },
+  { name: "소시지 맥머핀 위드 에그",     cal: 474, na: 1010, carb: 30, fat: 29, sugar: 3,  protein: 22, serving: 175, unit: "1개" },
+  { name: "팬케이크(맥도날드)",          cal: 583, na: 810,  carb: 99, fat: 15, sugar: 32, protein: 12, serving: 320, unit: "1세트" },
+  { name: "맥너겟 6조각",                cal: 269, na: 530,  carb: 18, fat: 14, sugar: 0,  protein: 18, serving: 105, unit: "6조각" },
+  { name: "맥너겟 10조각",               cal: 450, na: 880,  carb: 30, fat: 23, sugar: 0,  protein: 30, serving: 175, unit: "10조각" },
+  { name: "맥너겟 20조각",               cal: 900, na: 1760, carb: 60, fat: 46, sugar: 0,  protein: 60, serving: 350, unit: "20조각" },
+  { name: "맥도날드 감자튀김(S)",        cal: 230, na: 270,  carb: 31, fat: 10, sugar: 0,  protein: 3,  serving: 71,  unit: "S사이즈" },
+  { name: "맥도날드 감자튀김(M)",        cal: 320, na: 370,  carb: 43, fat: 14, sugar: 0,  protein: 4,  serving: 99,  unit: "M사이즈" },
+  { name: "맥도날드 감자튀김(L)",        cal: 444, na: 510,  carb: 59, fat: 20, sugar: 0,  protein: 6,  serving: 138, unit: "L사이즈" },
+  { name: "해시브라운(맥도날드)",        cal: 148, na: 330,  carb: 15, fat: 9,  sugar: 0,  protein: 1,  serving: 55,  unit: "1개" },
+  { name: "맥플러리 오레오(S)",          cal: 347, na: 200,  carb: 56, fat: 11, sugar: 44, protein: 8,  serving: 250, unit: "S사이즈" },
+  { name: "맥플러리 딸기(S)",            cal: 320, na: 180,  carb: 54, fat: 9,  sugar: 40, protein: 8,  serving: 245, unit: "S사이즈" },
+  { name: "소프트콘(맥도날드)",          cal: 141, na: 75,   carb: 24, fat: 4,  sugar: 18, protein: 4,  serving: 105, unit: "1개" },
+  { name: "맥카페 아메리카노(M)",        cal: 10,  na: 10,   carb: 2,  fat: 0,  sugar: 0,  protein: 1,  serving: 350, unit: "M(350ml)" },
+  { name: "맥카페 라떼(M)",              cal: 190, na: 115,  carb: 18, fat: 8,  sugar: 17, protein: 10, serving: 400, unit: "M(400ml)" },
+
+  // ── 롯데리아 ──
+  { name: "불고기버거(롯데리아)",        cal: 429, na: 670,  carb: 47, fat: 18, sugar: 9,  protein: 20, serving: 172, unit: "1개" },
+  { name: "새우버거(롯데리아)",          cal: 491, na: 910,  carb: 51, fat: 22, sugar: 6,  protein: 19, serving: 196, unit: "1개" },
+  { name: "모짜렐라인더버거(롯데리아)",  cal: 502, na: 1010, carb: 50, fat: 23, sugar: 8,  protein: 24, serving: 203, unit: "1개" },
+  { name: "치즈버거(롯데리아)",          cal: 381, na: 810,  carb: 42, fat: 17, sugar: 5,  protein: 18, serving: 155, unit: "1개" },
+  { name: "더블불고기버거(롯데리아)",    cal: 586, na: 1010, carb: 51, fat: 29, sugar: 11, protein: 36, serving: 245, unit: "1개" },
+  { name: "크리스피버거(롯데리아)",      cal: 480, na: 870,  carb: 46, fat: 22, sugar: 5,  protein: 23, serving: 183, unit: "1개" },
+  { name: "한우불고기버거(롯데리아)",    cal: 490, na: 820,  carb: 48, fat: 20, sugar: 10, protein: 24, serving: 195, unit: "1개" },
+  { name: "AZ버거(롯데리아)",            cal: 680, na: 1200, carb: 58, fat: 36, sugar: 12, protein: 35, serving: 285, unit: "1개" },
+  { name: "양념감자(롯데리아)",          cal: 270, na: 590,  carb: 44, fat: 9,  sugar: 3,  protein: 3,  serving: 109, unit: "1인분" },
+  { name: "오징어링(롯데리아)",          cal: 310, na: 430,  carb: 38, fat: 14, sugar: 2,  protein: 8,  serving: 109, unit: "1인분" },
+  { name: "옥수수 스프(롯데리아)",       cal: 143, na: 630,  carb: 17, fat: 7,  sugar: 5,  protein: 3,  serving: 225, unit: "1컵" },
+  { name: "소프트아이스크림(롯데리아)",  cal: 165, na: 95,   carb: 28, fat: 5,  sugar: 22, protein: 4,  serving: 120, unit: "1개" },
+  { name: "핫도그(롯데리아)",            cal: 390, na: 780,  carb: 42, fat: 18, sugar: 5,  protein: 15, serving: 150, unit: "1개" },
+
+  // ── 버거킹 ──
+  { name: "와퍼(버거킹)",               cal: 641, na: 1020, carb: 49, fat: 38, sugar: 11, protein: 30, serving: 290, unit: "1개" },
+  { name: "더블와퍼(버거킹)",           cal: 887, na: 1230, carb: 51, fat: 56, sugar: 12, protein: 51, serving: 410, unit: "1개" },
+  { name: "치즈와퍼(버거킹)",           cal: 740, na: 1200, carb: 50, fat: 45, sugar: 11, protein: 35, serving: 310, unit: "1개" },
+  { name: "통새우와퍼(버거킹)",         cal: 650, na: 1100, carb: 57, fat: 33, sugar: 10, protein: 28, serving: 280, unit: "1개" },
+  { name: "스파이시 와퍼(버거킹)",      cal: 672, na: 1120, carb: 52, fat: 39, sugar: 12, protein: 31, serving: 295, unit: "1개" },
+  { name: "치킨킹(버거킹)",             cal: 603, na: 1240, carb: 55, fat: 30, sugar: 9,  protein: 27, serving: 265, unit: "1개" },
+  { name: "올데이킹(버거킹)",           cal: 580, na: 950,  carb: 52, fat: 28, sugar: 8,  protein: 26, serving: 245, unit: "1개" },
+  { name: "버거킹 감자튀김(M)",         cal: 340, na: 490,  carb: 46, fat: 15, sugar: 0,  protein: 4,  serving: 113, unit: "M사이즈" },
+  { name: "버거킹 감자튀김(L)",         cal: 460, na: 660,  carb: 62, fat: 21, sugar: 0,  protein: 5,  serving: 153, unit: "L사이즈" },
+  { name: "어니언링(버거킹)",           cal: 380, na: 480,  carb: 47, fat: 18, sugar: 3,  protein: 5,  serving: 125, unit: "1인분" },
+
+  // ── KFC ──
+  { name: "징거버거(KFC)",              cal: 524, na: 1090, carb: 47, fat: 23, sugar: 6,  protein: 27, serving: 220, unit: "1개" },
+  { name: "타워버거(KFC)",              cal: 610, na: 1180, carb: 54, fat: 28, sugar: 7,  protein: 31, serving: 250, unit: "1개" },
+  { name: "커넬크리스피버거(KFC)",      cal: 570, na: 1050, carb: 50, fat: 26, sugar: 6,  protein: 28, serving: 235, unit: "1개" },
+  { name: "오리지널치킨(KFC, 1조각)",   cal: 323, na: 850,  carb: 14, fat: 20, sugar: 0,  protein: 23, serving: 150, unit: "1조각" },
+  { name: "핫윙(KFC, 1개)",             cal: 180, na: 590,  carb: 8,  fat: 11, sugar: 0,  protein: 13, serving: 85,  unit: "1개" },
+  { name: "KFC 감자튀김(M)",            cal: 290, na: 590,  carb: 42, fat: 12, sugar: 0,  protein: 4,  serving: 105, unit: "M사이즈" },
+  { name: "코울슬로(KFC, S)",           cal: 120, na: 270,  carb: 15, fat: 6,  sugar: 9,  protein: 2,  serving: 110, unit: "S사이즈" },
+  { name: "KFC 콘샐러드",               cal: 95,  na: 240,  carb: 18, fat: 2,  sugar: 7,  protein: 2,  serving: 130, unit: "1컵" },
+
+  // ── 써브웨이 (15cm / 이탈리안 빵 기준) ──
+  { name: "써브웨이 BLT(15cm)",         cal: 315, na: 750,  carb: 45, fat: 9,  sugar: 7,  protein: 17, serving: 215, unit: "15cm" },
+  { name: "써브웨이 에그마요(15cm)",     cal: 370, na: 840,  carb: 46, fat: 14, sugar: 8,  protein: 18, serving: 220, unit: "15cm" },
+  { name: "써브웨이 터키브레스트(15cm)", cal: 290, na: 910,  carb: 47, fat: 5,  sugar: 7,  protein: 20, serving: 220, unit: "15cm" },
+  { name: "써브웨이 이탈리안BMT(15cm)", cal: 420, na: 1280, carb: 46, fat: 17, sugar: 7,  protein: 23, serving: 238, unit: "15cm" },
+  { name: "써브웨이 스테이크&치즈(15cm)", cal: 390, na: 960, carb: 47, fat: 13, sugar: 7, protein: 25, serving: 250, unit: "15cm" },
+  { name: "써브웨이 참치(15cm)",         cal: 430, na: 870,  carb: 47, fat: 18, sugar: 7,  protein: 18, serving: 250, unit: "15cm" },
+  { name: "써브웨이 로스트치킨(15cm)",   cal: 340, na: 880,  carb: 47, fat: 8,  sugar: 7,  protein: 25, serving: 245, unit: "15cm" },
+  { name: "써브웨이 베지딜라이트(15cm)", cal: 245, na: 590,  carb: 45, fat: 4,  sugar: 8,  protein: 11, serving: 200, unit: "15cm" },
+  { name: "써브웨이 풀드포크(15cm)",     cal: 430, na: 1020, carb: 53, fat: 13, sugar: 12, protein: 29, serving: 270, unit: "15cm" },
+  { name: "써브웨이 쉬림프(15cm)",       cal: 310, na: 850,  carb: 46, fat: 7,  sugar: 7,  protein: 18, serving: 230, unit: "15cm" },
+  { name: "써브웨이 BBQ치킨(15cm)",      cal: 380, na: 980,  carb: 50, fat: 9,  sugar: 12, protein: 26, serving: 255, unit: "15cm" },
+  { name: "써브웨이 스파이시이탈리안(15cm)", cal: 480, na: 1420, carb: 46, fat: 24, sugar: 7, protein: 24, serving: 255, unit: "15cm" },
+  { name: "써브웨이 쿠키(초콜릿칩)",     cal: 220, na: 160,  carb: 30, fat: 10, sugar: 18, protein: 3,  serving: 45,  unit: "1개" },
+
+  // ── 동대문엽기떡볶이 ──
+  { name: "엽기떡볶이(소/1인)",          cal: 580, na: 1380, carb: 95, fat: 10, sugar: 22, protein: 18, serving: 400, unit: "1인분" },
+  { name: "엽기떡볶이(중/2인)",          cal: 1060, na: 2520, carb: 175, fat: 18, sugar: 40, protein: 33, serving: 730, unit: "2인분" },
+  { name: "로제떡볶이(소/1인, 엽기)",    cal: 650, na: 1200, carb: 88, fat: 18, sugar: 16, protein: 20, serving: 420, unit: "1인분" },
+  { name: "엽기 라면사리",               cal: 350, na: 1080, carb: 68, fat: 5,  sugar: 2,  protein: 9,  serving: 120, unit: "1개" },
+  { name: "엽기 치즈사리",               cal: 120, na: 280,  carb: 3,  fat: 9,  sugar: 2,  protein: 7,  serving: 45,  unit: "1개" },
+  { name: "엽기 달걀사리",               cal: 75,  na: 80,   carb: 1,  fat: 5,  sugar: 0,  protein: 6,  serving: 55,  unit: "1개" },
+  { name: "엽기 모둠튀김(5종)",          cal: 350, na: 420,  carb: 48, fat: 15, sugar: 2,  protein: 8,  serving: 150, unit: "1세트" },
+
+  // ── 신전떡볶이 ──
+  { name: "신전떡볶이(1인)",             cal: 460, na: 1250, carb: 82, fat: 7,  sugar: 18, protein: 13, serving: 380, unit: "1인분" },
+  { name: "신전 핵불닭떡볶이(1인)",      cal: 490, na: 1380, carb: 85, fat: 7,  sugar: 16, protein: 14, serving: 390, unit: "1인분" },
+  { name: "신전 치즈떡볶이(1인)",        cal: 540, na: 1310, carb: 84, fat: 13, sugar: 17, protein: 17, serving: 400, unit: "1인분" },
+  { name: "신전 로제떡볶이(1인)",        cal: 520, na: 1180, carb: 82, fat: 12, sugar: 16, protein: 15, serving: 400, unit: "1인분" },
+  { name: "신전 튀김세트(5종)",          cal: 310, na: 380,  carb: 42, fat: 13, sugar: 1,  protein: 8,  serving: 130, unit: "5종세트" },
+
+  // ── 죠스떡볶이 ──
+  { name: "죠스떡볶이(1인)",             cal: 490, na: 1280, carb: 87, fat: 8,  sugar: 20, protein: 14, serving: 400, unit: "1인분" },
+  { name: "죠스 로제떡볶이(1인)",        cal: 560, na: 1180, carb: 85, fat: 14, sugar: 16, protein: 16, serving: 420, unit: "1인분" },
+  { name: "죠스 치즈떡볶이(1인)",        cal: 540, na: 1300, carb: 85, fat: 13, sugar: 18, protein: 17, serving: 415, unit: "1인분" },
+
+  // ── 교촌치킨 ──
+  { name: "교촌 오리지널(1조각)",        cal: 315, na: 570,  carb: 12, fat: 19, sugar: 0,  protein: 28, serving: 140, unit: "1조각" },
+  { name: "교촌 허니오리지널(1조각)",    cal: 350, na: 600,  carb: 20, fat: 19, sugar: 8,  protein: 28, serving: 148, unit: "1조각" },
+  { name: "교촌 허니콤보(1조각)",        cal: 375, na: 640,  carb: 24, fat: 19, sugar: 10, protein: 29, serving: 155, unit: "1조각" },
+  { name: "교촌 레드콤보(1조각)",        cal: 335, na: 685,  carb: 15, fat: 19, sugar: 3,  protein: 27, serving: 143, unit: "1조각" },
+  { name: "교촌 살살치킨(1조각)",        cal: 340, na: 660,  carb: 16, fat: 19, sugar: 4,  protein: 27, serving: 145, unit: "1조각" },
+
+  // ── BHC치킨 ──
+  { name: "뿌링클치킨(1조각)",           cal: 350, na: 625,  carb: 17, fat: 20, sugar: 2,  protein: 26, serving: 145, unit: "1조각" },
+  { name: "맛초킹치킨(1조각)",           cal: 365, na: 670,  carb: 19, fat: 21, sugar: 3,  protein: 26, serving: 150, unit: "1조각" },
+  { name: "BHC 황금올리브(1조각)",       cal: 325, na: 575,  carb: 13, fat: 19, sugar: 0,  protein: 26, serving: 138, unit: "1조각" },
+  { name: "BHC 레드킹(1조각)",           cal: 355, na: 690,  carb: 16, fat: 20, sugar: 2,  protein: 27, serving: 146, unit: "1조각" },
+
+  // ── BBQ치킨 ──
+  { name: "BBQ 황금올리브(1조각)",       cal: 330, na: 590,  carb: 14, fat: 18, sugar: 0,  protein: 28, serving: 140, unit: "1조각" },
+  { name: "BBQ 자메이카(1조각)",         cal: 340, na: 680,  carb: 16, fat: 18, sugar: 2,  protein: 27, serving: 145, unit: "1조각" },
+  { name: "BBQ 블랙바베큐(1조각)",       cal: 345, na: 660,  carb: 17, fat: 18, sugar: 4,  protein: 27, serving: 146, unit: "1조각" },
+  { name: "BBQ 순살치킨(1인분)",         cal: 480, na: 920,  carb: 28, fat: 27, sugar: 2,  protein: 36, serving: 200, unit: "1인분" },
+
+  // ── 굽네치킨 ──
+  { name: "굽네 오리지널(1조각)",        cal: 275, na: 580,  carb: 9,  fat: 14, sugar: 0,  protein: 28, serving: 130, unit: "1조각" },
+  { name: "굽네 고추바사삭(1조각)",      cal: 290, na: 615,  carb: 10, fat: 15, sugar: 0,  protein: 28, serving: 133, unit: "1조각" },
+  { name: "굽네 볼케이노(1조각)",        cal: 295, na: 650,  carb: 11, fat: 15, sugar: 1,  protein: 28, serving: 135, unit: "1조각" },
+  { name: "굽네 시크릿양념(1조각)",      cal: 305, na: 640,  carb: 13, fat: 15, sugar: 3,  protein: 28, serving: 137, unit: "1조각" },
+
+  // ── 파리바게뜨 ──
+  { name: "파리바게뜨 소금빵",           cal: 220, na: 280,  carb: 32, fat: 8,  sugar: 4,  protein: 5,  serving: 80,  unit: "1개" },
+  { name: "파리바게뜨 크루아상",         cal: 278, na: 320,  carb: 30, fat: 16, sugar: 5,  protein: 6,  serving: 95,  unit: "1개" },
+  { name: "파리바게뜨 단팥빵",           cal: 260, na: 210,  carb: 49, fat: 5,  sugar: 18, protein: 6,  serving: 100, unit: "1개" },
+  { name: "파리바게뜨 소보로빵",         cal: 310, na: 250,  carb: 48, fat: 11, sugar: 15, protein: 6,  serving: 105, unit: "1개" },
+  { name: "파리바게뜨 에그샌드위치",     cal: 290, na: 530,  carb: 36, fat: 12, sugar: 4,  protein: 11, serving: 130, unit: "1개" },
+  { name: "파리바게뜨 BLT샌드위치",     cal: 340, na: 690,  carb: 38, fat: 14, sugar: 5,  protein: 15, serving: 150, unit: "1개" },
+  { name: "파리바게뜨 생크림케이크(1조각)", cal: 320, na: 180, carb: 38, fat: 17, sugar: 25, protein: 4, serving: 115, unit: "1조각" },
+  { name: "파리바게뜨 치즈케이크(1조각)", cal: 380, na: 290, carb: 36, fat: 22, sugar: 23, protein: 7, serving: 120, unit: "1조각" },
+  { name: "파리바게뜨 마카롱(1개)",      cal: 100, na: 30,   carb: 16, fat: 4,  sugar: 14, protein: 1,  serving: 28,  unit: "1개" },
+
+  // ── 뚜레쥬르 ──
+  { name: "뚜레쥬르 소보로빵",           cal: 310, na: 250,  carb: 48, fat: 11, sugar: 15, protein: 6,  serving: 105, unit: "1개" },
+  { name: "뚜레쥬르 단팥빵",             cal: 250, na: 200,  carb: 47, fat: 4,  sugar: 16, protein: 5,  serving: 98,  unit: "1개" },
+  { name: "뚜레쥬르 크루아상",           cal: 270, na: 310,  carb: 29, fat: 15, sugar: 4,  protein: 5,  serving: 90,  unit: "1개" },
+  { name: "뚜레쥬르 베이컨에그샌드위치", cal: 370, na: 680,  carb: 38, fat: 18, sugar: 5,  protein: 15, serving: 150, unit: "1개" },
+  { name: "뚜레쥬르 촉촉한초코케이크(1조각)", cal: 390, na: 220, carb: 52, fat: 18, sugar: 34, protein: 5, serving: 130, unit: "1조각" },
+  { name: "뚜레쥬르 생크림빵",           cal: 240, na: 170,  carb: 34, fat: 10, sugar: 12, protein: 4,  serving: 90,  unit: "1개" },
+
+  // ── 본죽 ──
+  { name: "본죽 전복죽(小)",             cal: 310, na: 780,  carb: 55, fat: 4,  sugar: 2,  protein: 16, serving: 400, unit: "小(1인)" },
+  { name: "본죽 쇠고기죽(小)",           cal: 330, na: 820,  carb: 56, fat: 6,  sugar: 2,  protein: 14, serving: 400, unit: "小(1인)" },
+  { name: "본죽 닭죽(小)",               cal: 290, na: 760,  carb: 50, fat: 4,  sugar: 2,  protein: 15, serving: 400, unit: "小(1인)" },
+  { name: "본죽 야채죽(小)",             cal: 260, na: 700,  carb: 50, fat: 3,  sugar: 3,  protein: 7,  serving: 400, unit: "小(1인)" },
+  { name: "본죽 김치참치죽(小)",         cal: 345, na: 920,  carb: 55, fat: 7,  sugar: 2,  protein: 16, serving: 400, unit: "小(1인)" },
+  { name: "본죽 낙지죽(小)",             cal: 280, na: 840,  carb: 48, fat: 3,  sugar: 2,  protein: 14, serving: 400, unit: "小(1인)" },
+
+  // ── 한솥도시락 ──
+  { name: "한솥 치킨마요(1인)",          cal: 520, na: 900,  carb: 75, fat: 16, sugar: 5,  protein: 20, serving: 350, unit: "1인분" },
+  { name: "한솥 제육볶음도시락",         cal: 580, na: 980,  carb: 78, fat: 14, sugar: 8,  protein: 26, serving: 380, unit: "1인분" },
+  { name: "한솥 돈까스도시락",           cal: 620, na: 850,  carb: 80, fat: 20, sugar: 5,  protein: 25, serving: 380, unit: "1인분" },
+  { name: "한솥 참치마요도시락",         cal: 490, na: 820,  carb: 72, fat: 13, sugar: 4,  protein: 18, serving: 340, unit: "1인분" },
+  { name: "한솥 불고기도시락",           cal: 560, na: 950,  carb: 76, fat: 13, sugar: 10, protein: 24, serving: 365, unit: "1인분" },
 ];
 
 // 검색 함수: 2글자 이상 입력 시 이름 포함 검색
