@@ -176,7 +176,11 @@
 
 <header>
   <h1>🥗 식사 기록</h1>
-  <div style="width:36px"></div>
+  <button onclick="restoreFromSheets()"
+          style="background:rgba(255,255,255,0.2); border:none; color:white;
+                 font-size:0.72rem; padding:5px 9px; border-radius:8px; cursor:pointer;">
+    시트복원
+  </button>
 </header>
 
 <!-- 날짜 네비게이션 -->
@@ -738,6 +742,32 @@ function renderPage() {
             }).join('')}
       </div>`;
   }).join('');
+}
+
+// ── 구글 시트 복원 ──
+async function restoreFromSheets() {
+  const url = localStorage.getItem(API_KEY);
+  if (!url) { showToast('혈압 앱 설정에서 URL을 먼저 입력하세요'); return; }
+
+  showToast('복원 중...');
+  try {
+    const res  = await fetch(`${url}?sheet=food`);
+    const json = await res.json();
+    if (!json.ok) { showToast('복원 실패: ' + json.error); return; }
+
+    const incoming = json.data || [];
+    if (incoming.length === 0) { showToast('시트에 식사 데이터가 없습니다'); return; }
+
+    const existing = getRecords();
+    const existSet = new Set(existing.map(r => r.datetime + r.food_name));
+    const added    = incoming.filter(r => !existSet.has(r.datetime + r.food_name))
+                             .map(r => ({ ...r, synced: true }));
+    saveRecords([...existing, ...added]);
+    renderPage();
+    showToast(`식사 ${added.length}건 복원됨 (기존 ${existing.length}건 유지)`);
+  } catch (e) {
+    showToast('복원 실패: 네트워크 오류');
+  }
 }
 
 // ── 토스트 ──
