@@ -10,16 +10,19 @@
 // 4. 배포 URL을 앱 설정 화면에 입력
 // ============================================================
 
-const BP_SHEET   = 'BloodPressure';
-const FOOD_SHEET = 'FoodLog';
+const BP_SHEET       = 'BloodPressure';
+const FOOD_SHEET     = 'FoodLog';
+const EXERCISE_SHEET = 'ExerciseLog';
 
 // ── 라우팅 ──
 function doGet(e) {
-  const sheetType = e.parameter.sheet || 'bp'; // 'bp' | 'food'
+  const sheetType = e.parameter.sheet || 'bp'; // 'bp' | 'food' | 'exercise'
   const action    = e.parameter.action || 'read'; // 'read' | 'write' | 'delete'
 
   if (sheetType === 'food') {
     return handleFood(action, e.parameter);
+  } else if (sheetType === 'exercise') {
+    return handleExercise(action, e.parameter);
   } else {
     return handleBP(action, e.parameter);
   }
@@ -161,6 +164,78 @@ function foodDelete(p) {
     const rows = sh.getDataRange().getValues();
     for (let i = 1; i < rows.length; i++) {
       if (toISO(rows[i][0]) === p.datetime && rows[i][2] === p.food_name) {
+        sh.deleteRow(i + 1); return ok({});
+      }
+    }
+    return err('기록 없음');
+  } catch(e) { return err(e.message); }
+}
+
+// ════════════════════════════════════════
+// 운동 기록 (ExerciseLog)
+// ════════════════════════════════════════
+function handleExercise(action, p) {
+  if (action === 'write')  return exerciseWrite(p);
+  if (action === 'delete') return exerciseDelete(p);
+  return exerciseRead();
+}
+
+function getExerciseSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(EXERCISE_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(EXERCISE_SHEET);
+    sh.appendRow(['datetime', 'exercise_type', 'name', 'duration', 'sets', 'distance_km', 'notes']);
+    styleHeader(sh, 7, '#6d28d9');
+    sh.setFrozenRows(1);
+    sh.setColumnWidth(1, 180);
+    sh.setColumnWidth(3, 160);
+  }
+  return sh;
+}
+
+function exerciseRead() {
+  try {
+    const sh = getExerciseSheet();
+    if (sh.getLastRow() < 2) return ok({ data: [] });
+    const rows = sh.getDataRange().getValues();
+    const data = rows.slice(1).filter(r => r[0]).map(r => ({
+      datetime:      toISO(r[0]),
+      exercise_type: r[1] || '',
+      name:          r[2] || '',
+      duration:      Number(r[3]) || 0,
+      sets:          r[4] !== '' ? Number(r[4]) : null,
+      distance_km:   r[5] !== '' ? Number(r[5]) : null,
+      notes:         r[6] || ''
+    })).sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+    return ok({ data });
+  } catch(e) { return err(e.message); }
+}
+
+function exerciseWrite(p) {
+  try {
+    if (!p.name) return err('운동 이름 필요');
+    if (!p.duration) return err('운동 시간 필요');
+    const sh = getExerciseSheet();
+    sh.appendRow([
+      p.datetime      || new Date().toISOString(),
+      p.exercise_type || '',
+      p.name,
+      Number(p.duration),
+      p.sets        ? Number(p.sets)        : '',
+      p.distance_km ? Number(p.distance_km) : '',
+      p.notes       || ''
+    ]);
+    return ok({});
+  } catch(e) { return err(e.message); }
+}
+
+function exerciseDelete(p) {
+  try {
+    const sh = getExerciseSheet();
+    const rows = sh.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (toISO(rows[i][0]) === p.datetime && rows[i][2] === p.name) {
         sh.deleteRow(i + 1); return ok({});
       }
     }

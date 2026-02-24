@@ -1,5 +1,5 @@
-const CACHE_NAME = 'bp-tracker-v2';
-const ASSETS = ['./index.html', './food.html', './dashboard.html', './manifest.json', './foods-db.js'];
+const CACHE_NAME = 'bp-tracker-v3';
+const ASSETS = ['./index.html', './food.html', './exercise.html', './dashboard.html', './manifest.json', './foods-db.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(

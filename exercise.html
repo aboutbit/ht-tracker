@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#6d28d9">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>운동 기록</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple: #6d28d9;
+      --purple-light: #8b5cf6;
+      --purple-bg: #ede9fe;
+      --green: #059669;
+      --green-bg: #d1fae5;
+      --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
+      --gray-400: #94a3b8; --gray-600: #475569; --gray-800: #1e293b;
+      --red: #dc2626;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--gray-50); color: var(--gray-800);
+      min-height: 100vh; max-width: 480px; margin: 0 auto;
+    }
+
+    /* ── 헤더 ── */
+    header {
+      background: var(--purple); color: white; padding: 16px 20px 12px;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+
+    /* ── 동기화 상태 바 ── */
+    #sync-bar {
+      background: #fef3c7; color: #92400e; font-size: 0.78rem;
+      padding: 6px 20px; display: none; align-items: center; gap: 6px;
+    }
+    #sync-bar.show { display: flex; }
+    #sync-bar.synced { background: #d1fae5; color: #065f46; }
+    #sync-bar.error { background: #fee2e2; color: #991b1b; }
+
+    /* ── 카드 ── */
+    .card {
+      background: white; border-radius: 16px; margin: 16px; padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card-title {
+      font-size: 0.8rem; font-weight: 600; color: var(--gray-400);
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px;
+    }
+
+    /* ── 운동 유형 토글 ── */
+    .type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+    .type-btn {
+      padding: 12px 8px; border: 2px solid var(--gray-200); border-radius: 12px;
+      background: white; color: var(--gray-600); font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; text-align: center; transition: all 0.15s; line-height: 1.4;
+    }
+    .type-btn.active { border-color: var(--purple); background: var(--purple-bg); color: var(--purple); }
+    .type-btn:active { transform: scale(0.97); }
+
+    /* ── 폼 ── */
+    .input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .input-group label { font-size: 0.78rem; font-weight: 600; color: var(--gray-600); }
+    .input-group select,
+    .input-group input {
+      border: 2px solid var(--gray-200); border-radius: 12px;
+      padding: 12px 14px; font-size: 1rem; color: var(--gray-800);
+      width: 100%; outline: none; -webkit-appearance: none;
+      transition: border-color 0.15s; background: white;
+    }
+    .input-group select:focus,
+    .input-group input:focus { border-color: var(--purple-light); }
+    .input-group input::placeholder { color: var(--gray-200); }
+    .input-unit { font-size: 0.72rem; color: var(--gray-400); margin-top: 2px; }
+
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── 날짜/시간 ── */
+    .datetime-row {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+    }
+    #datetime-display { font-size: 0.9rem; color: var(--gray-600); }
+    .text-btn {
+      background: none; border: none; color: var(--purple-light);
+      font-size: 0.82rem; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+    }
+    .text-btn:active { background: var(--gray-100); }
+
+    /* ── 저장 버튼 ── */
+    #save-btn {
+      width: 100%; background: var(--purple); color: white; border: none;
+      border-radius: 14px; padding: 16px; font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: background 0.15s, transform 0.1s;
+    }
+    #save-btn:active { background: #5b21b6; transform: scale(0.98); }
+
+    /* ── 기록 목록 ── */
+    #records-list { display: flex; flex-direction: column; gap: 10px; }
+    .record-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; background: white; border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06); position: relative; overflow: hidden;
+    }
+    .record-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+    .record-left { padding-left: 8px; }
+    .record-name { font-size: 1.1rem; font-weight: 700; color: var(--gray-800); }
+    .record-meta { font-size: 0.78rem; color: var(--gray-400); margin-top: 2px; }
+    .record-right { text-align: right; flex-shrink: 0; margin-left: 8px; }
+    .record-badge { font-size: 0.72rem; font-weight: 600; padding: 3px 8px; border-radius: 10px; }
+    .record-detail { font-size: 0.78rem; color: var(--gray-400); margin-top: 3px; }
+    .delete-btn {
+      background: none; border: none; color: var(--gray-400); font-size: 0.9rem;
+      cursor: pointer; padding: 4px 6px; border-radius: 6px; margin-left: 8px; flex-shrink: 0;
+    }
+    .delete-btn:active { color: var(--red); background: #fee2e2; }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--gray-400); }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+    /* ── 하단 네비 ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px; background: white;
+      border-top: 1px solid var(--gray-200); display: flex;
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 10px 4px; background: none; border: none; cursor: pointer;
+      color: var(--gray-400); font-size: 0.65rem; gap: 2px; text-decoration: none;
+    }
+    .nav-btn.active { color: var(--purple); }
+    .nav-icon { font-size: 1.25rem; }
+    .bottom-pad { height: 70px; }
+
+    /* ── 토스트 ── */
+    #toast {
+      position: fixed; bottom: 80px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--gray-800); color: white; padding: 10px 20px;
+      border-radius: 20px; font-size: 0.88rem; opacity: 0;
+      transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+      white-space: nowrap; z-index: 300;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>💪 운동 기록</h1>
+</header>
+
+<div id="sync-bar"></div>
+
+<!-- 입력 카드 -->
+<div class="card">
+  <div class="card-title">운동 기록 입력</div>
+
+  <!-- 운동 유형 토글 -->
+  <div class="type-toggle">
+    <button class="type-btn active" id="btn-isometric" onclick="setType('isometric')">
+      🧱 등척성 운동
+    </button>
+    <button class="type-btn" id="btn-cardio" onclick="setType('cardio')">
+      🏃 유산소 운동
+    </button>
+  </div>
+
+  <!-- 등척성 운동 폼 -->
+  <div id="form-isometric">
+    <div class="input-group">
+      <label>운동 선택</label>
+      <select id="iso-name">
+        <option value="플랭크">플랭크</option>
+        <option value="벽 스쿼트">벽 스쿼트</option>
+        <option value="핸드그립">핸드그립</option>
+        <option value="사이드 플랭크">사이드 플랭크</option>
+        <option value="복근 수축">복근 수축</option>
+        <option value="기타">기타 (직접 입력)</option>
+      </select>
+    </div>
+    <div id="iso-custom-wrap" class="input-group" style="display:none">
+      <label>운동 이름 직접 입력</label>
+      <input type="text" id="iso-custom" placeholder="운동 이름">
+    </div>
+    <div class="row-2">
+      <div class="input-group">
+        <label>유지 시간</label>
+        <input type="number" id="iso-duration" inputmode="numeric" placeholder="30" min="1" max="3600">
+        <div class="input-unit">초 (seconds)</div>
+      </div>
+      <div class="input-group">
+        <label>세트 수</label>
+        <input type="number" id="iso-sets" inputmode="numeric" placeholder="3" min="1" max="20">
+        <div class="input-unit">세트</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 유산소 운동 폼 -->
+  <div id="form-cardio" style="display:none">
+    <div class="input-group">
+      <label>운동 선택</label>
+      <select id="cardio-name">
+        <option value="걷기">걷기</option>
+        <option value="달리기">달리기</option>
+        <option value="자전거">자전거</option>
+        <option value="수영">수영</option>
+        <option value="등산">등산</option>
+        <option value="기타">기타 (직접 입력)</option>
+      </select>
+    </div>
+    <div id="cardio-custom-wrap" class="input-group" style="display:none">
+      <label>운동 이름 직접 입력</label>
+      <input type="text" id="cardio-custom" placeholder="운동 이름">
+    </div>
+    <div class="row-2">
+      <div class="input-group">
+        <label>운동 시간</label>
+        <input type="number" id="cardio-duration" inputmode="numeric" placeholder="30" min="1" max="600">
+        <div class="input-unit">분 (minutes)</div>
+      </div>
+      <div class="input-group">
+        <label>거리 (선택)</label>
+        <input type="number" id="cardio-distance" inputmode="decimal" placeholder="3.5" min="0" step="0.1">
+        <div class="input-unit">km</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 공통 -->
+  <div class="input-group">
+    <label>메모 (선택)</label>
+    <input type="text" id="notes" placeholder="오전 공원, 인터벌 트레이닝...">
+  </div>
+
+  <div class="datetime-row">
+    <span id="datetime-display"></span>
+    <button class="text-btn" onclick="setNow()">지금으로</button>
+  </div>
+
+  <button id="save-btn" onclick="saveRecord()">저장하기</button>
+</div>
+
+<!-- 최근 기록 -->
+<div class="card" style="padding-bottom: 12px;">
+  <div class="card-title">최근 기록</div>
+  <div id="records-list">
+    <div class="empty-state">
+      <div class="icon">🏋️</div>
+      <div>아직 기록이 없습니다</div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-pad"></div>
+
+<!-- 하단 네비 -->
+<nav class="bottom-nav">
+  <a href="index.html" class="nav-btn"><span class="nav-icon">❤️</span><span>혈압</span></a>
+  <a href="food.html" class="nav-btn"><span class="nav-icon">🥗</span><span>식사</span></a>
+  <button class="nav-btn active"><span class="nav-icon">💪</span><span>운동</span></button>
+  <a href="dashboard.html" class="nav-btn"><span class="nav-icon">📊</span><span>대시보드</span></a>
+</nav>
+
+<!-- 토스트 -->
+<div id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'exercise_records';
+const API_URL_KEY = 'bp_api_url';
+const PENDING_KEY = 'exercise_pending';
+
+let currentType = 'isometric';
+let currentDatetime = new Date().toISOString();
+
+// ── 운동 유형 전환 ──
+function setType(type) {
+  currentType = type;
+  document.getElementById('form-isometric').style.display = type === 'isometric' ? 'block' : 'none';
+  document.getElementById('form-cardio').style.display = type === 'cardio' ? 'block' : 'none';
+  document.getElementById('btn-isometric').classList.toggle('active', type === 'isometric');
+  document.getElementById('btn-cardio').classList.toggle('active', type === 'cardio');
+}
+
+// ── 기타 선택 시 직접 입력 표시 ──
+function initSelectListeners() {
+  document.getElementById('iso-name').addEventListener('change', function() {
+    document.getElementById('iso-custom-wrap').style.display = this.value === '기타' ? 'block' : 'none';
+  });
+  document.getElementById('cardio-name').addEventListener('change', function() {
+    document.getElementById('cardio-custom-wrap').style.display = this.value === '기타' ? 'block' : 'none';
+  });
+}
+
+// ── 날짜/시간 ──
+function setNow() {
+  currentDatetime = new Date().toISOString();
+  document.getElementById('datetime-display').textContent = formatDt(currentDatetime);
+}
+
+function formatDt(isoStr) {
+  const d = new Date(isoStr);
+  return d.toLocaleString('ko-KR', {
+    month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
+  });
+}
+
+// ── 로컬 스토리지 ──
+function getRecords() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+}
+function saveRecords(r) { localStorage.setItem(STORAGE_KEY, JSON.stringify(r)); }
+function getPending() {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch { return []; }
+}
+function savePending(p) { localStorage.setItem(PENDING_KEY, JSON.stringify(p)); }
+
+// ── API 동기화 ──
+async function syncToSheet(record) {
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) return false;
+  const params = new URLSearchParams({
+    sheet: 'exercise',
+    action: 'write',
+    datetime: record.datetime,
+    exercise_type: record.exercise_type,
+    name: record.name,
+    duration: record.duration,
+    sets: record.sets != null ? record.sets : '',
+    distance_km: record.distance_km != null ? record.distance_km : '',
+    notes: record.notes || ''
+  });
+  try {
+    const res = await fetch(`${apiUrl}?${params}`, { method: 'GET' });
+    const data = await res.json();
+    return data.ok === true;
+  } catch { return false; }
+}
+
+async function deleteFromSheet(datetime, name) {
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) return false;
+  const params = new URLSearchParams({ sheet: 'exercise', action: 'delete', datetime, name });
+  try {
+    const res = await fetch(`${apiUrl}?${params}`, { method: 'GET' });
+    const data = await res.json();
+    return data.ok === true;
+  } catch { return false; }
+}
+
+// ── 동기화 상태 바 ──
+function showSyncBar(msg, type = '') {
+  const bar = document.getElementById('sync-bar');
+  bar.textContent = msg;
+  bar.className = 'show' + (type ? ' ' + type : '');
+  if (type === 'synced') setTimeout(() => { bar.className = ''; }, 3000);
+}
+
+// ── 저장 ──
+async function saveRecord() {
+  let name, duration;
+
+  if (currentType === 'isometric') {
+    const sel = document.getElementById('iso-name').value;
+    name = sel === '기타' ? document.getElementById('iso-custom').value.trim() : sel;
+    duration = parseInt(document.getElementById('iso-duration').value);
+    if (!name) return showToast('운동 이름을 입력하세요');
+    if (!duration || duration < 1) return showToast('유지 시간을 입력하세요 (초)');
+  } else {
+    const sel = document.getElementById('cardio-name').value;
+    name = sel === '기타' ? document.getElementById('cardio-custom').value.trim() : sel;
+    duration = parseInt(document.getElementById('cardio-duration').value);
+    if (!name) return showToast('운동 이름을 입력하세요');
+    if (!duration || duration < 1) return showToast('운동 시간을 입력하세요 (분)');
+  }
+
+  const sets = currentType === 'isometric'
+    ? (parseInt(document.getElementById('iso-sets').value) || null)
+    : null;
+  const distance_km = currentType === 'cardio'
+    ? (parseFloat(document.getElementById('cardio-distance').value) || null)
+    : null;
+  const notes = document.getElementById('notes').value.trim();
+
+  const record = {
+    datetime: currentDatetime,
+    exercise_type: currentType,
+    name,
+    duration,
+    sets,
+    distance_km,
+    notes,
+    synced: false
+  };
+
+  // 1. 로컬 저장
+  const records = getRecords();
+  records.unshift(record);
+  saveRecords(records);
+
+  // 2. 폼 초기화
+  if (currentType === 'isometric') {
+    document.getElementById('iso-duration').value = '';
+    document.getElementById('iso-sets').value = '';
+  } else {
+    document.getElementById('cardio-duration').value = '';
+    document.getElementById('cardio-distance').value = '';
+  }
+  document.getElementById('notes').value = '';
+  setNow();
+  renderRecords();
+  showToast('저장되었습니다');
+
+  // 3. Google Sheets 동기화
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) { showSyncBar('⚠️ Apps Script URL 미설정 — 설정에서 입력하세요'); return; }
+
+  showSyncBar('☁️ 동기화 중...');
+  const ok = await syncToSheet(record);
+  if (ok) {
+    records[0].synced = true;
+    saveRecords(records);
+    renderRecords();
+    showSyncBar('✓ 동기화 완료', 'synced');
+  } else {
+    const pending = getPending();
+    pending.push(record);
+    savePending(pending);
+    showSyncBar('⚠️ 동기화 실패 — 나중에 재시도됩니다', 'error');
+  }
+}
+
+// ── 삭제 ──
+async function deleteRecord(datetime, name) {
+  if (!confirm('이 기록을 삭제할까요?')) return;
+  const records = getRecords().filter(r => !(r.datetime === datetime && r.name === name));
+  saveRecords(records);
+  renderRecords();
+  showToast('삭제되었습니다');
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (apiUrl) deleteFromSheet(datetime, name);
+}
+
+// ── 렌더링 ──
+function renderRecords() {
+  const records = getRecords().slice(0, 15);
+  const container = document.getElementById('records-list');
+
+  if (records.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🏋️</div>
+        <div>아직 기록이 없습니다</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = records.map(r => {
+    const isIso = r.exercise_type === 'isometric';
+    const accent    = isIso ? '#6d28d9' : '#059669';
+    const badgeBg   = isIso ? '#ede9fe' : '#d1fae5';
+    const badgeColor = isIso ? '#5b21b6' : '#065f46';
+    const badgeLabel = isIso ? '등척성' : '유산소';
+    const icon = isIso ? '🧱' : '🏃';
+
+    const detailParts = [];
+    if (isIso) {
+      detailParts.push(`${r.duration}초`);
+      if (r.sets) detailParts.push(`${r.sets}세트`);
+    } else {
+      detailParts.push(`${r.duration}분`);
+      if (r.distance_km) detailParts.push(`${r.distance_km}km`);
+    }
+    if (r.notes) detailParts.push(r.notes);
+
+    const syncIcon = r.synced ? '☁️' : '⏳';
+    const safeName = r.name.replace(/'/g, "\\'");
+
+    return `
+      <div class="record-item">
+        <div class="record-accent" style="background:${accent}"></div>
+        <div class="record-left">
+          <div class="record-name">${icon} ${r.name}</div>
+          <div class="record-meta">${formatDt(r.datetime)}</div>
+        </div>
+        <div class="record-right">
+          <div class="record-badge" style="background:${badgeBg}; color:${badgeColor}">${badgeLabel}</div>
+          <div class="record-detail">${detailParts.join(' · ')} ${syncIcon}</div>
+        </div>
+        <button class="delete-btn" onclick="deleteRecord('${r.datetime}', '${safeName}')" title="삭제">✕</button>
+      </div>`;
+  }).join('');
+}
+
+// ── 토스트 ──
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// ── 초기화 ──
+function init() {
+  setNow();
+  renderRecords();
+  initSelectListeners();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
