@@ -385,25 +385,19 @@ function jsonpFetch(url, timeout = 12000) {
   });
 }
 
-// ── 시트에서 불러오기 ──
-async function fetchFromSheets() {
+// ── 구글 시트에서 동기화 ──
+async function syncFromSheets() {
   const url = localStorage.getItem(API_KEY);
-  if (!url) { allRecords = []; renderPage(); return; }
-  document.getElementById('meals-container').innerHTML =
-    '<div style="text-align:center;padding:40px;color:#94a3b8;">⏳ 불러오는 중...</div>';
+  if (!url) return;
   try {
     const json = await jsonpFetch(`${url}?sheet=food&action=read`);
     if (json.ok) {
       allRecords = json.data || [];
+      localStorage.setItem('food_records', JSON.stringify(allRecords));
       renderPage();
-    } else {
-      document.getElementById('meals-container').innerHTML =
-        `<div style="text-align:center;padding:40px;color:#dc2626;">❌ 서버 오류: ${json.error}</div>`;
     }
   } catch(e) {
-    const msg = e.message === 'timeout' ? 'Apps Script 재배포 필요' : '인터넷 연결 확인';
-    document.getElementById('meals-container').innerHTML =
-      `<div style="text-align:center;padding:40px;color:#dc2626;">❌ 연결 실패 — ${msg}</div>`;
+    // 오프라인 - 로컬 데이터 유지
   }
 }
 
@@ -676,29 +670,38 @@ async function saveFood() {
     notes:     document.getElementById('f-notes').value.trim()
   };
 
-  closeModal();
-  showToast('저장 중...');
+  // 수정 시 기존 레코드 참조 저장 (시트 삭제용)
+  const oldRecord = isEditing ? allRecords.find(r => r.datetime === editingDatetime) : null;
 
+  // 1. 로컬스토리지에 즉시 저장 & 렌더링
   if (isEditing) {
-    const oldRecord = allRecords.find(r => r.datetime === editingDatetime);
-    if (oldRecord) await deleteFromSheet(oldRecord);
+    allRecords = allRecords.filter(r => r.datetime !== editingDatetime);
   }
-
-  const ok = await syncFood(record);
-  if (!ok) { showToast('저장 실패 — 인터넷 연결을 확인하세요'); return; }
-
+  allRecords = [record, ...allRecords];
+  localStorage.setItem('food_records', JSON.stringify(allRecords));
+  closeModal();
+  renderPage();
   showToast(isEditing ? `${name} 수정됨` : `${name} 추가됨`);
-  await fetchFromSheets();
+
+  // 2. 구글 시트 동기화 (백그라운드)
+  if (isEditing && oldRecord) await deleteFromSheet(oldRecord);
+  const ok = await syncFood(record);
+  if (!ok) showToast('⚠️ 시트 동기화 실패 — 로컬에는 저장됨');
 }
 
 // ── 삭제 ──
 async function deleteFood(datetime, foodName) {
   if (!confirm(`'${foodName}' 기록을 삭제할까요?`)) return;
-  showToast('삭제 중...');
-  const ok = await deleteFromSheet({ datetime, food_name: foodName });
-  if (!ok) { showToast('삭제 실패 — 인터넷 연결을 확인하세요'); return; }
+
+  // 1. 로컬스토리지에서 즉시 삭제 & 렌더링
+  allRecords = allRecords.filter(r => r.datetime !== datetime);
+  localStorage.setItem('food_records', JSON.stringify(allRecords));
+  renderPage();
   showToast('삭제되었습니다');
-  await fetchFromSheets();
+
+  // 2. 구글 시트 삭제 (백그라운드)
+  const apiUrl = localStorage.getItem(API_KEY);
+  if (apiUrl) await deleteFromSheet({ datetime, food_name: foodName });
 }
 
 // ── 렌더링 ──
@@ -778,7 +781,11 @@ function showToast(msg) {
 // ── 초기화 ──
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('date-display').textContent = displayDate(currentDate);
-  fetchFromSheets();
+  // 1. 로컬스토리지에서 즉시 로드
+  allRecords = JSON.parse(localStorage.getItem('food_records') || '[]');
+  renderPage();
+  // 2. 구글 시트에서 백그라운드 동기화
+  syncFromSheets();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }

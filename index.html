@@ -631,30 +631,25 @@ async function deleteFromSheet(datetime) {
   }
 }
 
-// ── 구글 시트에서 불러오기 ──
-async function fetchFromSheets() {
+// ── 구글 시트에서 동기화 ──
+async function syncFromSheets() {
   const apiUrl = localStorage.getItem(API_URL_KEY);
-  if (!apiUrl) {
-    allRecords = [];
-    renderRecords();
-    return;
-  }
-  showSyncBar('⏳ 불러오는 중...');
+  if (!apiUrl) return;
+  showSyncBar('⏳ 시트 동기화 중...');
   try {
     const json = await jsonpFetch(`${apiUrl}?sheet=bp&action=read`);
     if (json.ok) {
       allRecords = json.data || [];
+      localStorage.setItem('bp_records', JSON.stringify(allRecords));
       renderRecords();
       hideSyncBar();
     } else {
-      showSyncBar('❌ 서버 오류: ' + json.error, 'error');
+      showSyncBar('⚠️ 서버 오류: ' + json.error, 'error');
+      setTimeout(hideSyncBar, 3000);
     }
   } catch (e) {
-    if (e.message === 'timeout') {
-      showSyncBar('❌ 응답 없음 — Apps Script 코드 업데이트 및 재배포 필요 (설정→URL 진단 참고)', 'error');
-    } else {
-      showSyncBar('❌ 연결 실패 — 설정에서 URL 직접 열기로 확인하세요', 'error');
-    }
+    showSyncBar('⚠️ 오프라인 — 로컬 데이터 사용 중', 'error');
+    setTimeout(hideSyncBar, 3000);
   }
 }
 
@@ -691,38 +686,51 @@ async function saveRecord() {
 
   const record = { datetime: currentDatetime, systolic: sbp, diastolic: dbp, pulse, notes };
 
-  showSyncBar('☁️ 저장 중...');
-  const ok = await syncToSheet(record);
-  if (!ok) {
-    showSyncBar('❌ 저장 실패 — 인터넷 연결을 확인하세요', 'error');
-    return;
-  }
-
-  // 폼 초기화
+  // 1. 로컬스토리지에 즉시 저장 & 렌더링
+  allRecords = [record, ...allRecords];
+  localStorage.setItem('bp_records', JSON.stringify(allRecords));
   document.getElementById('sbp').value = '';
   document.getElementById('dbp').value = '';
   document.getElementById('pulse').value = '';
   document.getElementById('notes').value = '';
   document.getElementById('bp-badge').style.display = 'none';
   setNow();
+  renderRecords();
   showToast('저장되었습니다');
 
-  // 시트에서 새로 불러오기
-  await fetchFromSheets();
+  // 2. 구글 시트 동기화 (백그라운드)
+  showSyncBar('☁️ 구글 시트 동기화 중...');
+  const ok = await syncToSheet(record);
+  if (ok) {
+    showSyncBar('✅ 시트 동기화 완료', 'synced');
+  } else {
+    showSyncBar('⚠️ 시트 동기화 실패 — 로컬에는 저장됨', 'error');
+    setTimeout(hideSyncBar, 4000);
+  }
 }
 
 // ── 기록 삭제 ──
 async function deleteRecord(datetime) {
   if (!confirm('이 기록을 삭제할까요?')) return;
 
-  showSyncBar('🗑 삭제 중...');
-  const ok = await deleteFromSheet(datetime);
-  if (!ok) {
-    showSyncBar('❌ 삭제 실패 — 인터넷 연결을 확인하세요', 'error');
-    return;
-  }
+  // 1. 로컬스토리지에서 즉시 삭제 & 렌더링
+  allRecords = allRecords.filter(r => r.datetime !== datetime);
+  localStorage.setItem('bp_records', JSON.stringify(allRecords));
+  renderRecords();
   showToast('삭제되었습니다');
-  await fetchFromSheets();
+
+  // 2. 구글 시트 삭제 (백그라운드)
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (apiUrl) {
+    showSyncBar('🗑 구글 시트에서 삭제 중...');
+    const ok = await deleteFromSheet(datetime);
+    if (ok) {
+      hideSyncBar();
+    } else {
+      showSyncBar('⚠️ 시트 삭제 실패 — 재시도 필요', 'error');
+      setTimeout(hideSyncBar, 4000);
+    }
+  }
 }
 
 // ── 기록 렌더링 ──
@@ -731,10 +739,7 @@ function renderRecords() {
   const container = document.getElementById('records-list');
 
   if (records.length === 0) {
-    const apiUrl = localStorage.getItem(API_URL_KEY);
-    container.innerHTML = apiUrl
-      ? `<div class="empty-state"><div class="icon">📋</div><div>아직 기록이 없습니다</div></div>`
-      : `<div class="empty-state"><div class="icon">⚙️</div><div>설정에서 Apps Script URL을 입력하세요</div></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="icon">📋</div><div>아직 기록이 없습니다</div></div>`;
     return;
   }
 
@@ -785,7 +790,7 @@ function saveSettings() {
   localStorage.setItem(API_URL_KEY, url);
   closeSettings();
   showToast('설정이 저장되었습니다');
-  if (url) fetchFromSheets();
+  if (url) syncFromSheets();
 }
 
 function openTestUrl() {
@@ -798,12 +803,15 @@ function openTestUrl() {
 // ── 초기화 ──
 function init() {
   setNow();
+  // 1. 로컬스토리지에서 즉시 로드
+  allRecords = JSON.parse(localStorage.getItem('bp_records') || '[]');
+  renderRecords();
+  // 2. 구글 시트에서 백그라운드 동기화
   const apiUrl = localStorage.getItem(API_URL_KEY);
   if (!apiUrl) {
-    renderRecords(); // "URL을 입력하세요" 안내 표시
     setTimeout(openSettings, 500);
   } else {
-    fetchFromSheets();
+    syncFromSheets();
   }
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});

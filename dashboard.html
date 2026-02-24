@@ -414,19 +414,14 @@ function setExerciseRange(n, btn) {
 async function loadAll() {
   const url = localStorage.getItem(API_KEY);
 
-  document.getElementById('bp-loading').style.display = 'block';
-  document.getElementById('bp-content').style.display = 'none';
-  document.getElementById('food-loading').style.display = 'block';
-  document.getElementById('food-content').style.display = 'none';
+  // 1. 로컬스토리지에서 즉시 렌더링
+  bpData   = JSON.parse(localStorage.getItem('bp_records')   || '[]');
+  foodData = JSON.parse(localStorage.getItem('food_records') || '[]');
+  renderBP();
+  renderFood();
 
-  if (!url) {
-    bpData   = JSON.parse(localStorage.getItem('bp_records') || '[]');
-    foodData = JSON.parse(localStorage.getItem('food_records') || '[]');
-    renderBP();
-    renderFood();
-    return;
-  }
-
+  // 2. 구글 시트에서 백그라운드 동기화
+  if (!url) return;
   try {
     const [bpRes, foodRes] = await Promise.all([
       fetch(`${url}?action=read`),
@@ -435,36 +430,43 @@ async function loadAll() {
     const bpJson   = await bpRes.json();
     const foodJson = await foodRes.json();
 
-    if (bpJson.ok)   bpData   = bpJson.data;
-    else             bpData   = JSON.parse(localStorage.getItem('bp_records') || '[]');
-    if (foodJson.ok) foodData = foodJson.data;
-    else             foodData = JSON.parse(localStorage.getItem('food_records') || '[]');
+    let updated = false;
+    if (bpJson.ok) {
+      bpData = bpJson.data;
+      localStorage.setItem('bp_records', JSON.stringify(bpData));
+      updated = true;
+    }
+    if (foodJson.ok) {
+      foodData = foodJson.data;
+      localStorage.setItem('food_records', JSON.stringify(foodData));
+      updated = true;
+    }
+    if (updated) { renderBP(); renderFood(); }
   } catch {
-    bpData   = JSON.parse(localStorage.getItem('bp_records') || '[]');
-    foodData = JSON.parse(localStorage.getItem('food_records') || '[]');
+    // 오프라인 - 로컬 데이터 유지
   }
-
-  renderBP();
-  renderFood();
 }
 
 async function loadExercise() {
   const url = localStorage.getItem(API_KEY);
-  document.getElementById('exercise-loading').style.display = 'block';
-  document.getElementById('exercise-content').style.display = 'none';
 
-  if (!url) {
-    exerciseData = JSON.parse(localStorage.getItem('exercise_records') || '[]');
-  } else {
-    try {
-      const res  = await fetch(`${url}?sheet=exercise&action=read`);
-      const json = await res.json();
-      exerciseData = json.ok ? json.data : JSON.parse(localStorage.getItem('exercise_records') || '[]');
-    } catch {
-      exerciseData = JSON.parse(localStorage.getItem('exercise_records') || '[]');
-    }
-  }
+  // 1. 로컬스토리지에서 즉시 렌더링
+  exerciseData = JSON.parse(localStorage.getItem('exercise_records') || '[]');
   renderExercise();
+
+  // 2. 구글 시트에서 백그라운드 동기화
+  if (!url) return;
+  try {
+    const res  = await fetch(`${url}?sheet=exercise&action=read`);
+    const json = await res.json();
+    if (json.ok) {
+      exerciseData = json.data;
+      localStorage.setItem('exercise_records', JSON.stringify(exerciseData));
+      renderExercise();
+    }
+  } catch {
+    // 오프라인 - 로컬 데이터 유지
+  }
 }
 
 // ── 혈압 분류 ──
