@@ -87,9 +87,12 @@
     .modal-overlay.open { display: flex; }
     .modal { background: white; border-radius: 24px 24px 0 0; width: 100%;
              max-width: 480px; margin: 0 auto; padding: 20px;
-             max-height: 92vh; overflow-y: auto; }
+             max-height: 92vh; overflow-y: auto;
+             transition: transform 0.2s; touch-action: pan-y; }
     .modal-handle { width: 40px; height: 4px; background: var(--gray-200);
-                    border-radius: 2px; margin: 0 auto 16px; }
+                    border-radius: 2px; margin: 0 auto 16px; cursor: grab; }
+    .modal-handle-area { width: 100%; padding: 4px 0 12px; margin: -4px -20px 0;
+                         padding-left: 20px; padding-right: 20px; cursor: grab; }
     .modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; }
 
     .search-input { width: 100%; border: 2px solid var(--gray-200); border-radius: 12px;
@@ -231,7 +234,9 @@
     <div class="serving-row">
       <span class="serving-label">인분</span>
       <div class="serving-btns">
+        <button class="serving-btn" data-val="0.333" onclick="setServing(1/3)">⅓</button>
         <button class="serving-btn" data-val="0.5" onclick="setServing(0.5)">½</button>
+        <button class="serving-btn" data-val="0.667" onclick="setServing(2/3)">⅔</button>
         <button class="serving-btn selected" data-val="1" onclick="setServing(1)">1</button>
         <button class="serving-btn" data-val="1.5" onclick="setServing(1.5)">1.5</button>
         <button class="serving-btn" data-val="2" onclick="setServing(2)">2</button>
@@ -366,7 +371,10 @@ function openModal(meal) {
     el.classList.toggle('selected', el.dataset.meal === selectedMeal);
   });
   clearForm();
-  document.getElementById('modal').classList.add('open');
+  const overlay = document.getElementById('modal');
+  const modalEl = overlay.querySelector('.modal');
+  modalEl.style.transform = '';
+  overlay.classList.add('open');
   setTimeout(() => document.getElementById('food-search').focus(), 100);
 }
 
@@ -378,6 +386,42 @@ function closeModal() {
 function closeModalIf(e) {
   if (e.target === document.getElementById('modal')) closeModal();
 }
+
+// ── 모달 스와이프 다운으로 닫기 ──
+(function() {
+  let startY = 0, isDragging = false;
+  document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('modal');
+    const modalEl = overlay.querySelector('.modal');
+
+    modalEl.addEventListener('touchstart', e => {
+      // 스크롤 가능 영역이 최상단일 때만 드래그 허용
+      if (modalEl.scrollTop > 0) return;
+      startY = e.touches[0].clientY;
+      isDragging = true;
+      modalEl.style.transition = 'none';
+    }, { passive: true });
+
+    modalEl.addEventListener('touchmove', e => {
+      if (!isDragging) return;
+      if (modalEl.scrollTop > 0) { isDragging = false; return; }
+      const dy = e.touches[0].clientY - startY;
+      if (dy > 0) modalEl.style.transform = `translateY(${dy}px)`;
+    }, { passive: true });
+
+    modalEl.addEventListener('touchend', e => {
+      if (!isDragging) return;
+      isDragging = false;
+      modalEl.style.transition = '';
+      const dy = e.changedTouches[0].clientY - startY;
+      if (dy > 80) {
+        closeModal();
+      } else {
+        modalEl.style.transform = '';
+      }
+    });
+  });
+})();
 
 function selectMeal(el) {
   selectedMeal = el.dataset.meal;
@@ -391,16 +435,18 @@ function clearForm() {
   document.getElementById('autocomplete').classList.remove('show');
   baseFood = null;
   currentServing = 1;
+  syncServingBtns(1);
+}
+
+function syncServingBtns(val) {
   document.querySelectorAll('.serving-btn').forEach(b => {
-    b.classList.toggle('selected', parseFloat(b.dataset.val) === 1);
+    b.classList.toggle('selected', Math.abs(parseFloat(b.dataset.val) - val) < 0.01);
   });
 }
 
 function setServing(val) {
   currentServing = val;
-  document.querySelectorAll('.serving-btn').forEach(b => {
-    b.classList.toggle('selected', parseFloat(b.dataset.val) === val);
-  });
+  syncServingBtns(val);
   if (baseFood) {
     document.getElementById('f-na').value      = Math.round(baseFood.na * val);
     document.getElementById('f-cal').value     = Math.round(baseFood.cal * val);
@@ -430,9 +476,7 @@ function onSearch(q) {
 function selectFood(f) {
   baseFood = f;
   currentServing = 1;
-  document.querySelectorAll('.serving-btn').forEach(b => {
-    b.classList.toggle('selected', parseFloat(b.dataset.val) === 1);
-  });
+  syncServingBtns(1);
   document.getElementById('f-name').value    = f.name;
   document.getElementById('f-na').value      = f.na;
   document.getElementById('f-cal').value     = f.cal;
