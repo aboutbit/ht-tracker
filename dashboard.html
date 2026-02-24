@@ -14,6 +14,7 @@
     :root {
       --blue: #1e40af; --blue-l: #3b82f6;
       --green: #065f46; --green-l: #10b981;
+      --purple: #6d28d9; --purple-l: #8b5cf6;
       --red: #dc2626; --orange: #ea580c; --yellow: #d97706;
       --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
       --gray-400: #94a3b8; --gray-600: #475569; --gray-800: #1e293b;
@@ -39,6 +40,7 @@
            border-bottom: 2px solid transparent; background: none; border-top: none;
            border-left: none; border-right: none; }
     .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .tab.active.tab-exercise { color: var(--purple); border-bottom-color: var(--purple); }
 
     /* ── 기간 필터 ── */
     .range-bar { display: flex; gap: 8px; padding: 12px 16px;
@@ -50,6 +52,7 @@
                   color: var(--gray-600); }
     .range-pill.active { background: var(--blue); color: white; border-color: var(--blue); }
     .tab-panel[data-tab="food"] .range-pill.active { background: var(--green); border-color: var(--green); }
+    #tab-exercise .range-pill.active { background: var(--purple); color: white; border-color: var(--purple); }
 
     /* ── 카드 ── */
     .card { background: white; border-radius: 16px; margin: 0 16px 14px;
@@ -131,6 +134,7 @@
 <div class="tabs">
   <button class="tab active" onclick="switchTab('bp',this)">❤️ 혈압</button>
   <button class="tab" onclick="switchTab('food',this)">🥗 영양</button>
+  <button class="tab tab-exercise" onclick="switchTab('exercise',this)">💪 운동</button>
 </div>
 
 <!-- 혈압 탭 -->
@@ -266,6 +270,96 @@
   </div>
 </div>
 
+<!-- 운동 탭 -->
+<div class="tab-panel" id="tab-exercise">
+  <div class="range-bar">
+    <button class="range-pill active" onclick="setExerciseRange(7,this)">7일</button>
+    <button class="range-pill" onclick="setExerciseRange(30,this)">30일</button>
+    <button class="range-pill" onclick="setExerciseRange(90,this)">90일</button>
+  </div>
+
+  <div id="exercise-loading" class="loading">운동 데이터 불러오는 중...</div>
+
+  <div id="exercise-content" style="display:none">
+    <!-- 요약 통계 -->
+    <div class="card">
+      <div class="card-title">운동 요약</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-label">총 운동 횟수</div>
+          <div class="stat-val" id="ex-total" style="color:var(--purple)">—</div>
+          <div class="stat-sub">회</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">운동한 날</div>
+          <div class="stat-val" id="ex-days">—</div>
+          <div class="stat-sub">일</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">🧱 등척성</div>
+          <div class="stat-val" id="ex-iso">—</div>
+          <div class="stat-sub">회</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">🏃 유산소</div>
+          <div class="stat-val" id="ex-cardio">—</div>
+          <div class="stat-sub">회</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 유산소 합계 -->
+    <div class="card" id="ex-cardio-card">
+      <div class="card-title">유산소 합계</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-label">총 운동 시간</div>
+          <div class="stat-val" id="ex-total-min" style="color:var(--green)">—</div>
+          <div class="stat-sub">분</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">총 거리</div>
+          <div class="stat-val" id="ex-total-km" style="color:var(--green)">—</div>
+          <div class="stat-sub">km</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 일별 운동 횟수 차트 -->
+    <div class="card">
+      <div class="card-title">일별 운동 횟수</div>
+      <div class="chart-wrap"><canvas id="ex-daily-chart"></canvas></div>
+      <div class="legend" style="margin-top:10px">
+        <div class="legend-item"><div class="legend-dot" style="background:#6d28d9"></div> 등척성</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> 유산소</div>
+      </div>
+    </div>
+
+    <!-- 운동 유형 분포 -->
+    <div class="card">
+      <div class="card-title">운동 종목 분포</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="ex-type-chart"></canvas></div>
+    </div>
+
+    <!-- 자주 한 운동 랭킹 -->
+    <div class="card">
+      <div class="card-title">자주 한 운동</div>
+      <div class="food-rank" id="ex-rank"></div>
+    </div>
+
+    <!-- 최근 기록 -->
+    <div class="card">
+      <div class="card-title">최근 기록</div>
+      <div style="overflow-x:auto">
+        <table class="records-table">
+          <thead><tr><th>날짜</th><th>운동</th><th>유형</th><th>시간</th></tr></thead>
+          <tbody id="ex-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="bottom-pad"></div>
 
 <nav class="bottom-nav">
@@ -277,11 +371,13 @@
 
 <script>
 // ── 상태 ──
-let bpData   = [];
-let foodData = [];
-let bpRange   = 7;
-let foodRange = 7;
-let bpChart, classChart, naChart, calChart;
+let bpData       = [];
+let foodData     = [];
+let exerciseData = [];
+let bpRange       = 7;
+let foodRange     = 7;
+let exerciseRange = 7;
+let bpChart, classChart, naChart, calChart, exDailyChart, exTypeChart;
 const API_KEY = 'bp_api_url';
 
 // ── 탭 ──
@@ -290,6 +386,8 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
+  // 운동 탭 첫 진입 시 로드
+  if (name === 'exercise' && exerciseData.length === 0) loadExercise();
 }
 
 // ── 기간 ──
@@ -305,21 +403,23 @@ function setFoodRange(n, btn) {
   btn.classList.add('active');
   renderFood();
 }
+function setExerciseRange(n, btn) {
+  exerciseRange = n;
+  document.querySelectorAll('#tab-exercise .range-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderExercise();
+}
 
 // ── 데이터 로드 ──
 async function loadAll() {
   const url = localStorage.getItem(API_KEY);
 
-  // 혈압
   document.getElementById('bp-loading').style.display = 'block';
   document.getElementById('bp-content').style.display = 'none';
-
-  // 식사
   document.getElementById('food-loading').style.display = 'block';
   document.getElementById('food-content').style.display = 'none';
 
   if (!url) {
-    // 로컬 데이터만 사용
     bpData   = JSON.parse(localStorage.getItem('bp_records') || '[]');
     foodData = JSON.parse(localStorage.getItem('food_records') || '[]');
     renderBP();
@@ -346,6 +446,25 @@ async function loadAll() {
 
   renderBP();
   renderFood();
+}
+
+async function loadExercise() {
+  const url = localStorage.getItem(API_KEY);
+  document.getElementById('exercise-loading').style.display = 'block';
+  document.getElementById('exercise-content').style.display = 'none';
+
+  if (!url) {
+    exerciseData = JSON.parse(localStorage.getItem('exercise_records') || '[]');
+  } else {
+    try {
+      const res  = await fetch(`${url}?sheet=exercise&action=read`);
+      const json = await res.json();
+      exerciseData = json.ok ? json.data : JSON.parse(localStorage.getItem('exercise_records') || '[]');
+    } catch {
+      exerciseData = JSON.parse(localStorage.getItem('exercise_records') || '[]');
+    }
+  }
+  renderExercise();
 }
 
 // ── 혈압 분류 ──
@@ -606,6 +725,134 @@ function renderFood() {
         </div>
         <div class="food-rank-na">Na ${f.avgNa.toLocaleString()}mg</div>
       </div>`).join('');
+}
+
+// ── 운동 렌더링 ──
+function renderExercise() {
+  const filtered = filterByDays([...exerciseData], exerciseRange);
+
+  document.getElementById('exercise-loading').style.display = 'none';
+  document.getElementById('exercise-content').style.display = 'block';
+
+  if (filtered.length === 0) {
+    ['ex-total','ex-days','ex-iso','ex-cardio','ex-total-min','ex-total-km'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
+    document.getElementById('ex-rank').innerHTML  = '<div class="empty">기록 없음</div>';
+    document.getElementById('ex-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:20px">기록 없음</td></tr>';
+    return;
+  }
+
+  // ── 요약 통계 ──
+  const isoList    = filtered.filter(r => r.exercise_type === 'isometric');
+  const cardioList = filtered.filter(r => r.exercise_type === 'cardio');
+  const uniqueDays = new Set(filtered.map(r => r.datetime.slice(0,10))).size;
+
+  document.getElementById('ex-total').textContent   = filtered.length;
+  document.getElementById('ex-days').textContent    = uniqueDays;
+  document.getElementById('ex-iso').textContent     = isoList.length;
+  document.getElementById('ex-cardio').textContent  = cardioList.length;
+
+  // ── 유산소 합계 ──
+  const totalMin = sum(cardioList.map(r => r.duration || 0));
+  const totalKm  = cardioList.reduce((acc, r) => acc + (r.distance_km || 0), 0);
+  document.getElementById('ex-total-min').textContent = totalMin;
+  document.getElementById('ex-total-km').textContent  = totalKm > 0 ? totalKm.toFixed(1) : '—';
+  document.getElementById('ex-cardio-card').style.display = cardioList.length > 0 ? 'block' : 'none';
+
+  // ── 일별 운동 횟수 차트 ──
+  const dayMap = {};
+  filtered.forEach(r => {
+    const key = r.datetime.slice(0,10);
+    if (!dayMap[key]) dayMap[key] = { iso: 0, cardio: 0 };
+    if (r.exercise_type === 'isometric') dayMap[key].iso++;
+    else dayMap[key].cardio++;
+  });
+  const dayList   = Object.entries(dayMap).sort(([a],[b]) => a.localeCompare(b));
+  const dayLabels = dayList.map(([k]) => k.slice(5));
+  const isoVals   = dayList.map(([,v]) => v.iso);
+  const cardioVals= dayList.map(([,v]) => v.cardio);
+
+  if (exDailyChart) exDailyChart.destroy();
+  exDailyChart = new Chart(document.getElementById('ex-daily-chart'), {
+    type: 'bar',
+    data: {
+      labels: dayLabels,
+      datasets: [
+        { label: '등척성', data: isoVals,    backgroundColor: 'rgba(109,40,217,0.7)', borderRadius: 4, stack: 'ex' },
+        { label: '유산소', data: cardioVals, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 4, stack: 'ex' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { stacked: true, ticks: { maxTicksLimit: 10, maxRotation: 0 }, grid: { display: false } },
+        y: { stacked: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } }
+      }
+    }
+  });
+
+  // ── 종목별 도넛 차트 ──
+  const nameMap = {};
+  filtered.forEach(r => {
+    nameMap[r.name] = (nameMap[r.name] || 0) + 1;
+  });
+  const nameEntries = Object.entries(nameMap).sort((a,b) => b[1]-a[1]);
+  const donutColors = ['#6d28d9','#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#34d399','#60a5fa','#fbbf24','#f87171'];
+
+  if (exTypeChart) exTypeChart.destroy();
+  exTypeChart = new Chart(document.getElementById('ex-type-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: nameEntries.map(([k]) => k),
+      datasets: [{ data: nameEntries.map(([,v]) => v),
+                   backgroundColor: donutColors.slice(0, nameEntries.length),
+                   borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } },
+      cutout: '55%'
+    }
+  });
+
+  // ── 자주 한 운동 랭킹 ──
+  document.getElementById('ex-rank').innerHTML = nameEntries.slice(0,8).map(([name, cnt], i) => {
+    const isIso = filtered.find(r => r.name === name)?.exercise_type === 'isometric';
+    const icon  = isIso ? '🧱' : '🏃';
+    const badge = isIso ? `<span style="font-size:0.7rem;background:#ede9fe;color:#5b21b6;padding:2px 7px;border-radius:8px;font-weight:600">등척성</span>`
+                        : `<span style="font-size:0.7rem;background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:8px;font-weight:600">유산소</span>`;
+    return `
+      <div class="food-rank-item">
+        <div class="food-rank-left">
+          <div class="rank-num">${i+1}</div>
+          <div>
+            <div class="food-rank-name">${icon} ${name}</div>
+            <div class="food-rank-count">${cnt}회</div>
+          </div>
+        </div>
+        ${badge}
+      </div>`;
+  }).join('');
+
+  // ── 최근 기록 테이블 ──
+  const recent = [...filtered].sort((a,b) => new Date(b.datetime)-new Date(a.datetime)).slice(0,20);
+  document.getElementById('ex-tbody').innerHTML = recent.map(r => {
+    const isIso  = r.exercise_type === 'isometric';
+    const detail = isIso
+      ? `${r.duration}초${r.sets ? ' × '+r.sets+'세트' : ''}`
+      : `${r.duration}분${r.distance_km ? ' / '+r.distance_km+'km' : ''}`;
+    const badge  = isIso
+      ? `<span style="background:#ede9fe;color:#5b21b6;padding:2px 7px;border-radius:8px;font-size:0.7rem;font-weight:600">등척성</span>`
+      : `<span style="background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:8px;font-size:0.7rem;font-weight:600">유산소</span>`;
+    return `<tr>
+      <td>${dateLabel(r.datetime)}</td>
+      <td><strong>${r.name}</strong></td>
+      <td>${badge}</td>
+      <td style="color:var(--gray-600)">${detail}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ── 초기화 ──
