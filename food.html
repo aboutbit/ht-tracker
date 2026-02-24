@@ -383,36 +383,44 @@ async function deleteFromSheet(record) {
   try { await fetch(`${url}?${p}`); } catch {}
 }
 
-// ── 모달 스와이프: document 레벨에서 pull-to-refresh 완전 차단 ──
-let _swipeStartY = 0;
+// ── 모달 스와이프: 핸들 영역에서만 닫기, pull-to-refresh는 전체 차단 ──
+let _swipeStartY  = 0;
+let _swipeOnHandle = false;  // 핸들에서 시작한 경우만 슬라이드 닫기 활성화
 
 function _swipeTouchStart(e) {
-  _swipeStartY = e.touches[0].clientY;
+  _swipeStartY  = e.touches[0].clientY;
+  // 터치 시작점이 핸들(회색 바) 영역인지 확인
+  const handle = document.querySelector('#modal .modal-handle');
+  _swipeOnHandle = !!(handle && e.target.closest('.modal-handle'));
 }
 
 function _swipeTouchMove(e) {
   const modalEl = document.querySelector('#modal .modal');
   if (!modalEl) return;
-  // 모달 내부를 스크롤 중이면 자연스럽게 허용
-  if (modalEl.scrollTop > 0) return;
+  if (modalEl.scrollTop > 0) return;   // 모달 내부 스크롤 중이면 허용
   const dy = e.touches[0].clientY - _swipeStartY;
   if (dy > 0) {
-    e.preventDefault(); // document 레벨에서 pull-to-refresh 차단
-    modalEl.style.transition = 'none';
-    modalEl.style.transform = `translateY(${dy}px)`;
+    e.preventDefault();   // 어느 위치든 pull-to-refresh 차단
+    if (_swipeOnHandle) { // 핸들에서 시작했을 때만 모달 슬라이드
+      modalEl.style.transition = 'none';
+      modalEl.style.transform = `translateY(${dy}px)`;
+    }
   }
 }
 
 function _swipeTouchEnd(e) {
   const modalEl = document.querySelector('#modal .modal');
   if (!modalEl) return;
-  const dy = e.changedTouches[0].clientY - _swipeStartY;
   modalEl.style.transition = '';
-  if (dy > 80 && document.getElementById('modal').classList.contains('open')) {
-    closeModal();
-  } else {
-    modalEl.style.transform = '';
+  if (_swipeOnHandle) {
+    const dy = e.changedTouches[0].clientY - _swipeStartY;
+    if (dy > 80 && document.getElementById('modal').classList.contains('open')) {
+      closeModal();
+    } else {
+      modalEl.style.transform = '';
+    }
   }
+  _swipeOnHandle = false;
 }
 
 // ── 모달 ──
