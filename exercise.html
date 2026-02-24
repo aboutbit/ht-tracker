@@ -140,6 +140,15 @@
     .nav-icon { font-size: 1.25rem; }
     .bottom-pad { height: 70px; }
 
+    /* ── 날짜 탐색 ── */
+    .date-nav { display: flex; align-items: center; justify-content: center;
+                gap: 16px; padding: 12px 20px; background: white;
+                border-bottom: 1px solid var(--gray-200); }
+    .date-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer;
+                color: var(--gray-600); padding: 4px 8px; border-radius: 6px; }
+    .date-btn:active { background: var(--gray-100); }
+    #date-display { font-size: 0.95rem; font-weight: 600; color: var(--gray-800); }
+
     /* ── 토스트 ── */
     #toast {
       position: fixed; bottom: 80px; left: 50%;
@@ -159,6 +168,13 @@
 </header>
 
 <div id="sync-bar"></div>
+
+<!-- 날짜 네비게이션 -->
+<div class="date-nav">
+  <button class="date-btn" onclick="changeDate(-1)">‹</button>
+  <span id="date-display"></span>
+  <button class="date-btn" onclick="changeDate(1)">›</button>
+</div>
 
 <!-- 입력 카드 -->
 <div class="card">
@@ -252,7 +268,7 @@
 
 <!-- 최근 기록 -->
 <div class="card" style="padding-bottom: 12px;">
-  <div class="card-title">최근 기록</div>
+  <div class="card-title">당일 기록</div>
   <div id="records-list">
     <div class="empty-state">
       <div class="icon">🏋️</div>
@@ -278,6 +294,7 @@
 const API_URL_KEY = 'bp_api_url';
 
 let currentType = 'isometric';
+let currentDate = new Date();
 let currentDatetime = new Date().toISOString();
 
 // ── 운동 유형 전환 ──
@@ -299,9 +316,31 @@ function initSelectListeners() {
   });
 }
 
+// ── 날짜 유틸 ──
+function dateKey(d) { return d.toISOString().slice(0, 10); }
+function yesterday() { const d = new Date(); d.setDate(d.getDate() - 1); return dateKey(d); }
+function displayDate(d) {
+  const today = dateKey(new Date());
+  const key   = dateKey(d);
+  const label = key === today ? '오늘' : key === yesterday() ? '어제' : '';
+  return d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
+         + (label ? ` (${label})` : '');
+}
+function changeDate(dir) {
+  currentDate.setDate(currentDate.getDate() + dir);
+  document.getElementById('date-display').textContent = displayDate(currentDate);
+  setNow();
+  renderRecords();
+}
+function getDateRecords() {
+  const key = dateKey(currentDate);
+  return allRecords.filter(r => r.datetime && r.datetime.startsWith(key));
+}
+
 // ── 날짜/시간 ──
 function setNow() {
-  currentDatetime = new Date().toISOString();
+  const now = new Date();
+  currentDatetime = dateKey(currentDate) + 'T' + now.toTimeString().slice(0, 8);
   document.getElementById('datetime-display').textContent = formatDt(currentDatetime);
 }
 
@@ -493,7 +532,7 @@ async function deleteRecord(datetime, name) {
 
 // ── 렌더링 ──
 function renderRecords() {
-  const records = allRecords.slice(0, 15);
+  const records = getDateRecords();
   const container = document.getElementById('records-list');
 
   if (records.length === 0) {
@@ -551,6 +590,7 @@ function showToast(msg) {
 
 // ── 초기화 ──
 function init() {
+  document.getElementById('date-display').textContent = displayDate(currentDate);
   setNow();
   initSelectListeners();
   // 1. 로컬스토리지에서 즉시 로드

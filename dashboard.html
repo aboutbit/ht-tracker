@@ -471,11 +471,11 @@ async function loadExercise() {
 
 // ── 혈압 분류 ──
 function classifyBP(sbp, dbp) {
-  if (sbp > 180 || dbp > 120) return { label: '위기',    color: '#7f1d1d', bg: '#fee2e2' };
-  if (sbp >= 140 || dbp >= 90) return { label: '고혈압2', color: '#991b1b', bg: '#fee2e2' };
-  if (sbp >= 130 || dbp >= 80) return { label: '고혈압1', color: '#9a3412', bg: '#ffedd5' };
-  if (sbp >= 120 && dbp < 80)  return { label: '주의',   color: '#92400e', bg: '#fef3c7' };
-  return                               { label: '정상',   color: '#065f46', bg: '#d1fae5' };
+  if (sbp >= 160 || dbp >= 100) return { label: '2기',   color: '#991b1b', bg: '#fee2e2' };
+  if (sbp >= 140 || dbp >= 90)  return { label: '1기',   color: '#9a3412', bg: '#ffedd5' };
+  if (sbp >= 130 || dbp >= 80)  return { label: '전단계', color: '#92400e', bg: '#fef9c3' };
+  if (sbp >= 120 && dbp < 80)   return { label: '주의',  color: '#854d0e', bg: '#fef3c7' };
+  return                                { label: '정상',  color: '#065f46', bg: '#d1fae5' };
 }
 
 // ── 날짜 필터 ──
@@ -566,7 +566,7 @@ function renderBP() {
   const counts = { '정상': 0, '주의': 0, '고혈압1': 0, '고혈압2': 0, '위기': 0 };
   filtered.forEach(r => { counts[classifyBP(r.systolic, r.diastolic).label]++; });
   const labels2 = Object.keys(counts).filter(k => counts[k] > 0);
-  const clsColors = { '정상':'#10b981','주의':'#f59e0b','고혈압1':'#f97316','고혈압2':'#ef4444','위기':'#7f1d1d' };
+  const clsColors = { '정상':'#10b981','주의':'#f59e0b','전단계':'#f97316','1기':'#ef4444','2기':'#dc2626' };
 
   if (classChart) classChart.destroy();
   classChart = new Chart(document.getElementById('class-chart'), {

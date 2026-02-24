@@ -517,11 +517,11 @@ let allRecords = [];
 
 // ── 혈압 분류 ──
 function classifyBP(sbp, dbp) {
-  if (sbp > 180 || dbp > 120) return { label: '고혈압 위기', color: '#7f1d1d', bg: '#fee2e2', accent: '#dc2626' };
-  if (sbp >= 140 || dbp >= 90)  return { label: '고혈압 2단계', color: '#991b1b', bg: '#fee2e2', accent: '#ef4444' };
-  if (sbp >= 130 || dbp >= 80)  return { label: '고혈압 1단계', color: '#9a3412', bg: '#ffedd5', accent: '#f97316' };
-  if (sbp >= 120 && dbp < 80)   return { label: '주의혈압', color: '#92400e', bg: '#fef3c7', accent: '#f59e0b' };
-  return { label: '정상', color: '#065f46', bg: '#d1fae5', accent: '#10b981' };
+  if (sbp >= 160 || dbp >= 100) return { label: '고혈압 2기', color: '#991b1b', bg: '#fee2e2', accent: '#dc2626' };
+  if (sbp >= 140 || dbp >= 90)  return { label: '고혈압 1기', color: '#9a3412', bg: '#ffedd5', accent: '#ef4444' };
+  if (sbp >= 130 || dbp >= 80)  return { label: '전단계',     color: '#92400e', bg: '#fef9c3', accent: '#f97316' };
+  if (sbp >= 120 && dbp < 80)   return { label: '주의',       color: '#854d0e', bg: '#fef3c7', accent: '#f59e0b' };
+  return                                { label: '정상',       color: '#065f46', bg: '#d1fae5', accent: '#10b981' };
 }
 
 // ── 날짜 포맷 ──
