@@ -77,10 +77,12 @@
     .food-right { text-align: right; flex-shrink: 0; width: 88px; padding-left: 8px; }
     .food-na  { font-size: 0.88rem; font-weight: 600; color: var(--red); }
     .food-cal { font-size: 0.75rem; color: var(--gray-400); margin-top: 2px; }
-    .food-del { background: none; border: none; color: var(--gray-400);
-                font-size: 0.85rem; cursor: pointer; padding: 4px 6px;
-                border-radius: 6px; margin-left: 8px; }
-    .food-del:active { color: var(--red); background: var(--red-bg); }
+    .food-actions { display: flex; flex-direction: column; margin-left: 8px; flex-shrink: 0; gap: 2px; }
+    .food-edit, .food-del { background: none; border: none; color: var(--gray-400);
+                font-size: 0.8rem; cursor: pointer; padding: 3px 6px;
+                border-radius: 6px; line-height: 1.4; }
+    .food-edit:active { color: var(--green); background: var(--green-bg); }
+    .food-del:active  { color: var(--red);   background: var(--red-bg); }
     .empty-meal { font-size: 0.82rem; color: var(--gray-400); padding: 8px 4px; }
 
     /* ── 음식 추가 모달 ── */
@@ -315,6 +317,7 @@ let currentDate = new Date();
 let selectedMeal = '아침';
 let baseFood = null;
 let currentServing = 1;
+let editingDatetime = null;  // null = 새 추가, string = 기존 수정
 
 // ── 날짜 유틸 ──
 function dateKey(d) {
@@ -445,7 +448,10 @@ function clearForm() {
   document.getElementById('autocomplete').classList.remove('show');
   baseFood = null;
   currentServing = 1;
+  editingDatetime = null;
   syncServingBtns(1);
+  document.getElementById('modal-title').textContent = '음식 추가';
+  document.querySelector('.modal-save-btn').textContent = '추가하기';
 }
 
 function syncServingBtns(val) {
@@ -465,6 +471,54 @@ function setServing(val) {
     document.getElementById('f-sugar').value   = Math.round(baseFood.sugar * val * 10) / 10;
     document.getElementById('f-protein').value = Math.round(baseFood.protein * val * 10) / 10;
   }
+}
+
+// ── 수정 모달 열기 ──
+function openEditModal(datetime) {
+  const record = getRecords().find(r => r.datetime === datetime);
+  if (!record) return;
+
+  selectedMeal = record.meal;
+  document.querySelectorAll('.meal-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.meal === selectedMeal);
+  });
+
+  clearForm();
+  editingDatetime = datetime;
+
+  const srv = record.servings || 1;
+  currentServing = srv;
+  // 인분 역산해서 baseFood 복원 (인분 버튼 조작 가능하도록)
+  baseFood = {
+    na:      record.sodium   / srv,
+    cal:     record.calories / srv,
+    carb:    record.carbs    / srv,
+    fat:     record.fat      / srv,
+    sugar:   record.sugar    / srv,
+    protein: record.protein  / srv,
+  };
+  syncServingBtns(srv);
+
+  document.getElementById('f-name').value    = record.food_name;
+  document.getElementById('f-na').value      = record.sodium;
+  document.getElementById('f-cal').value     = record.calories;
+  document.getElementById('f-carb').value    = record.carbs;
+  document.getElementById('f-fat').value     = record.fat;
+  document.getElementById('f-sugar').value   = record.sugar;
+  document.getElementById('f-protein').value = record.protein;
+  document.getElementById('f-notes').value   = record.notes || '';
+  document.getElementById('food-search').value = record.food_name;
+
+  document.getElementById('modal-title').textContent = '음식 수정';
+  document.querySelector('.modal-save-btn').textContent = '수정하기';
+
+  const overlay = document.getElementById('modal');
+  overlay.querySelector('.modal').style.transform = '';
+  overlay.classList.add('open');
+  document.documentElement.style.overscrollBehavior = 'none';
+  document.addEventListener('touchstart', _swipeTouchStart, { passive: true });
+  document.addEventListener('touchmove',  _swipeTouchMove,  { passive: false });
+  document.addEventListener('touchend',   _swipeTouchEnd,   { passive: true });
 }
 
 // ── 검색 ──
@@ -498,16 +552,20 @@ function selectFood(f) {
   document.getElementById('autocomplete').classList.remove('show');
 }
 
-// ── 저장 ──
+// ── 저장 (추가 / 수정 공통) ──
 async function saveFood() {
   const name = document.getElementById('f-name').value.trim();
   const na   = parseFloat(document.getElementById('f-na').value);
   if (!name)      return showToast('음식 이름을 입력하세요');
   if (isNaN(na))  return showToast('나트륨 수치를 입력하세요');
 
+  const isEditing = !!editingDatetime;
+  const datetime  = isEditing
+    ? editingDatetime
+    : currentDate.toISOString().slice(0, 10) + 'T' + new Date().toTimeString().slice(0, 8);
+
   const record = {
-    datetime: currentDate.toISOString().slice(0, 10)
-              + 'T' + new Date().toTimeString().slice(0, 8),
+    datetime,
     meal:      selectedMeal,
     food_name: name,
     amount_g:  0,
@@ -523,20 +581,36 @@ async function saveFood() {
   };
 
   const records = getRecords();
-  records.push(record);
-  saveRecords(records);
-  closeModal();
-  renderPage();
-  showToast(`${name} 추가됨`);
 
-  // 비동기 동기화
-  const ok = await syncFood(record);
-  if (ok) {
-    records[records.length - 1].synced = true;
-    // 마지막 기록 찾아 업데이트
-    const all = getRecords();
-    const idx = all.findIndex(r => r.datetime === record.datetime && r.food_name === record.food_name);
-    if (idx >= 0) { all[idx].synced = true; saveRecords(all); }
+  if (isEditing) {
+    const idx = records.findIndex(r => r.datetime === editingDatetime);
+    const oldRecord = idx >= 0 ? records[idx] : null;
+    if (idx >= 0) records[idx] = record; else records.push(record);
+    saveRecords(records);
+    closeModal();
+    renderPage();
+    showToast(`${name} 수정됨`);
+    if (oldRecord?.synced) {
+      deleteFromSheet(oldRecord);
+      const ok = await syncFood(record);
+      if (ok) {
+        const all = getRecords();
+        const i = all.findIndex(r => r.datetime === datetime);
+        if (i >= 0) { all[i].synced = true; saveRecords(all); }
+      }
+    }
+  } else {
+    records.push(record);
+    saveRecords(records);
+    closeModal();
+    renderPage();
+    showToast(`${name} 추가됨`);
+    const ok = await syncFood(record);
+    if (ok) {
+      const all = getRecords();
+      const idx = all.findIndex(r => r.datetime === datetime && r.food_name === name);
+      if (idx >= 0) { all[idx].synced = true; saveRecords(all); }
+    }
   }
 }
 
@@ -605,7 +679,10 @@ function renderPage() {
                 <div class="food-na">Na ${Math.round(r.sodium)}mg</div>
                 <div class="food-cal">${Math.round(r.calories)}kcal</div>
               </div>
-              <button class="food-del" onclick="deleteFood('${r.datetime}','${r.food_name.replace(/'/g,"\\'")}')">✕</button>
+              <div class="food-actions">
+                <button class="food-edit" onclick="openEditModal('${r.datetime}')">✎</button>
+                <button class="food-del" onclick="deleteFood('${r.datetime}','${r.food_name.replace(/'/g,"\\'")}')">✕</button>
+              </div>
             </div>`;
             }).join('')}
       </div>`;

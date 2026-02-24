@@ -682,6 +682,8 @@ const FOOD_DB = [
   { name: "옥수수 스프(롯데리아)",       cal: 143, na: 630,  carb: 17, fat: 7,  sugar: 5,  protein: 3,  serving: 225, unit: "1컵" },
   { name: "소프트아이스크림(롯데리아)",  cal: 165, na: 95,   carb: 28, fat: 5,  sugar: 22, protein: 4,  serving: 120, unit: "1개" },
   { name: "핫도그(롯데리아)",            cal: 390, na: 780,  carb: 42, fat: 18, sugar: 5,  protein: 15, serving: 150, unit: "1개" },
+  { name: "치즈스틱(롯데리아)",          cal: 105, na: 215,  carb: 10, fat: 6,  sugar: 1,  protein: 5,  serving: 35,  unit: "1개" },
+  { name: "롱치즈스틱(롯데리아)",        cal: 210, na: 430,  carb: 20, fat: 12, sugar: 1,  protein: 9,  serving: 70,  unit: "1개" },
 
   // ── 버거킹 ──
   { name: "와퍼(버거킹)",               cal: 641, na: 1020, carb: 49, fat: 38, sugar: 11, protein: 30, serving: 290, unit: "1개" },
