@@ -332,7 +332,10 @@ let editingDatetime = null;  // null = 새 추가, string = 기존 수정
 
 // ── 날짜 유틸 ──
 function dateKey(d) {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 function displayDate(d) {
   const today = dateKey(new Date());
@@ -652,7 +655,7 @@ async function saveFood() {
   const isEditing = !!editingDatetime;
   const datetime  = isEditing
     ? editingDatetime
-    : currentDate.toISOString().slice(0, 10) + 'T' + new Date().toTimeString().slice(0, 8);
+    : dateKey(currentDate) + 'T' + new Date().toTimeString().slice(0, 8);
 
   const record = {
     datetime,

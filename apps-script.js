@@ -14,8 +14,12 @@ const BP_SHEET       = 'BloodPressure';
 const FOOD_SHEET     = 'FoodLog';
 const EXERCISE_SHEET = 'ExerciseLog';
 
+let _cb = null; // JSONP 콜백 이름
+
 // ── 라우팅 ──
 function doGet(e) {
+  _cb = e.parameter.callback || null; // JSONP 지원
+
   const sheetType = e.parameter.sheet || 'bp'; // 'bp' | 'food' | 'exercise'
   const action    = e.parameter.action || 'read'; // 'read' | 'write' | 'delete'
 
@@ -244,19 +248,55 @@ function exerciseDelete(p) {
 }
 
 // ════════════════════════════════════════
+// Telegram 알림
+// ════════════════════════════════════════
+const TELEGRAM_BOT_TOKEN = '8409366495:AAEu76y3fuSh4yjrzEnJ7C-7Pu_OuRkOm74';
+const TELEGRAM_CHAT_ID   = '8404210627';
+
+function sendTelegramMessage(text) {
+  const url = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendMessage';
+  UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text, parse_mode: 'HTML' })
+  });
+}
+
+function sendMorningBPReminder() {
+  sendTelegramMessage('🩺 <b>혈압 측정 시간</b> (오전 8시)\n지금 바로 기록해주세요!');
+}
+
+function sendEveningBPReminder() {
+  sendTelegramMessage('🩺 <b>혈압 측정 시간</b> (오후 10시)\n오늘 저녁 혈압을 기록해주세요!');
+}
+
+// ════════════════════════════════════════
 // 공통 유틸
 // ════════════════════════════════════════
-function ok(obj)  { return jsonOut(Object.assign({ ok: true  }, obj)); }
-function err(msg) { return jsonOut({ ok: false, error: msg }); }
+function ok(obj)  { return respond(Object.assign({ ok: true  }, obj)); }
+function err(msg) { return respond({ ok: false, error: msg }); }
 
-function jsonOut(obj) {
+function respond(obj) {
+  const json = JSON.stringify(obj);
+  if (_cb) {
+    // JSONP: <script> 태그로 요청 시 CORS 우회
+    return ContentService
+      .createTextOutput(_cb + '(' + json + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService
-    .createTextOutput(JSON.stringify(obj))
+    .createTextOutput(json)
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+function jsonOut(obj) { return respond(obj); }
+
 function toISO(val) {
-  return val instanceof Date ? val.toISOString() : String(val);
+  if (val instanceof Date) {
+    const tz = Session.getScriptTimeZone();
+    return Utilities.formatDate(val, tz, "yyyy-MM-dd'T'HH:mm:ss");
+  }
+  return String(val);
 }
 
 function styleHeader(sheet, cols, color) {
