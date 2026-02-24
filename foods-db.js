@@ -245,6 +245,98 @@ const FOOD_DB = [
   { name: "비비빅",         cal: 190, na: 70,  carb: 30, fat: 6,   sugar: 20, protein: 3,   serving: 130, unit: "1개" },
   { name: "구구콘",         cal: 210, na: 75,  carb: 30, fat: 9,   sugar: 20, protein: 3,   serving: 148, unit: "1개" },
 
+  // ── 박스 케이크 과자 (1개 / 1박스 구분) ──
+  { name: "몽쉘(1개)",          cal: 161, na: 67,  carb: 22, fat: 7.1, sugar: 14, protein: 2.2, serving: 38,  unit: "1개" },
+  { name: "몽쉘(1박스/6개)",    cal: 966, na: 402, carb: 132,fat: 43, sugar: 84, protein: 13,  serving: 228, unit: "1박스(6개)" },
+  { name: "오예스(1개)",        cal: 193, na: 67,  carb: 27, fat: 7.7, sugar: 16, protein: 2.6, serving: 42,  unit: "1개" },
+  { name: "오예스(1박스/6개)",  cal: 1158,na: 402, carb: 162,fat: 46, sugar: 96, protein: 16,  serving: 252, unit: "1박스(6개)" },
+  { name: "카스타드(1개)",      cal: 140, na: 65,  carb: 20, fat: 5.1, sugar: 12, protein: 2.3, serving: 38,  unit: "1개" },
+  { name: "카스타드(1박스/6개)",cal: 840, na: 390, carb: 120,fat: 31, sugar: 72, protein: 14,  serving: 228, unit: "1박스(6개)" },
+  { name: "빅파이(1개)",        cal: 200, na: 80,  carb: 28, fat: 8,   sugar: 16, protein: 3,   serving: 52,  unit: "1개" },
+  { name: "빅파이(1박스/6개)",  cal: 1200,na: 480, carb: 168,fat: 48, sugar: 96, protein: 18,  serving: 312, unit: "1박스(6개)" },
+  { name: "초코파이(1박스/12개)",cal:2040,na: 840, carb: 324,fat: 72, sugar: 216,protein: 24,  serving: 468, unit: "1박스(12개)" },
+  { name: "찰떡오예스(1개)",    cal: 180, na: 55,  carb: 30, fat: 5.5, sugar: 14, protein: 2,   serving: 45,  unit: "1개" },
+  { name: "후렌치파이(1개)",    cal: 300, na: 160, carb: 39, fat: 14,  sugar: 15, protein: 3.7, serving: 64,  unit: "1개" },
+  { name: "후렌치파이(1봉지/3개)",cal:900,na: 480, carb: 117,fat: 42, sugar: 45, protein: 11,  serving: 192, unit: "1봉지(3개)" },
+
+  // ── 롯데 스낵 ──
+  { name: "몽쉘초코(1개)",   cal: 161, na: 67,  carb: 22, fat: 7.1, sugar: 14, protein: 2.2, serving: 38,  unit: "1개" },
+  { name: "칙촉",            cal: 272, na: 171, carb: 36, fat: 12,  sugar: 18, protein: 3.3, serving: 55,  unit: "1봉지" },
+  { name: "빈츠",            cal: 229, na: 133, carb: 30, fat: 10.5,sugar: 14, protein: 3.2, serving: 45,  unit: "1봉지" },
+  { name: "제크",            cal: 390, na: 480, carb: 54, fat: 16,  sugar: 4,  protein: 6,   serving: 80,  unit: "1봉지" },
+  { name: "롯데샌드",        cal: 360, na: 300, carb: 52, fat: 14,  sugar: 20, protein: 5,   serving: 80,  unit: "1봉지" },
+  { name: "치토스",          cal: 265, na: 310, carb: 30, fat: 14,  sugar: 2,  protein: 4,   serving: 50,  unit: "1봉지" },
+  { name: "꽃게랑",          cal: 230, na: 320, carb: 32, fat: 9,   sugar: 2,  protein: 3.5, serving: 50,  unit: "1봉지" },
+  { name: "목캔디(1개)",     cal: 15,  na: 2,   carb: 4,  fat: 0,   sugar: 3,  protein: 0,   serving: 4,   unit: "1개" },
+  { name: "웰치스구미",      cal: 180, na: 10,  carb: 44, fat: 0,   sugar: 32, protein: 1.5, serving: 50,  unit: "1봉지" },
+
+  // ── 오리온 스낵 ──
+  { name: "고래밥",          cal: 178, na: 280, carb: 28, fat: 5.5, sugar: 3,  protein: 3,   serving: 40,  unit: "1봉지" },
+  { name: "왕고래밥",        cal: 220, na: 360, carb: 35, fat: 7,   sugar: 4,  protein: 3.5, serving: 50,  unit: "1봉지" },
+  { name: "마가렛트",        cal: 270, na: 180, carb: 36, fat: 12,  sugar: 12, protein: 3,   serving: 54,  unit: "1봉지" },
+  { name: "왕꿈틀이",        cal: 200, na: 120, carb: 43, fat: 2,   sugar: 20, protein: 2,   serving: 50,  unit: "1봉지" },
+  { name: "눈을감자",        cal: 255, na: 280, carb: 33, fat: 12,  sugar: 2,  protein: 3,   serving: 50,  unit: "1봉지" },
+  { name: "도도한나쵸",      cal: 255, na: 240, carb: 34, fat: 11,  sugar: 2,  protein: 3.5, serving: 50,  unit: "1봉지" },
+  { name: "쉘위",            cal: 340, na: 110, carb: 44, fat: 16,  sugar: 24, protein: 4,   serving: 65,  unit: "1봉지" },
+
+  // ── 해태 스낵 ──
+  { name: "홈런볼",          cal: 235, na: 140, carb: 30, fat: 10.6,sugar: 14, protein: 2.5, serving: 46,  unit: "1봉지" },
+  { name: "허니버터칩",      cal: 316, na: 292, carb: 39, fat: 15.4,sugar: 8.5,protein: 3.8, serving: 60,  unit: "1봉지" },
+  { name: "누네띠네",        cal: 280, na: 180, carb: 36, fat: 13,  sugar: 15, protein: 3,   serving: 54,  unit: "1봉지" },
+  { name: "자유시간",        cal: 600, na: 200, carb: 72, fat: 30,  sugar: 35, protein: 8,   serving: 116, unit: "1봉지" },
+  { name: "에이스(해태)",    cal: 230, na: 300, carb: 31, fat: 10,  sugar: 2,  protein: 3.5, serving: 50,  unit: "1봉지" },
+
+  // ── 크라운 스낵 ──
+  { name: "쿠크다스",        cal: 380, na: 180, carb: 46, fat: 19,  sugar: 20, protein: 5,   serving: 72,  unit: "1봉지" },
+  { name: "웨하스",          cal: 500, na: 100, carb: 62, fat: 24,  sugar: 25, protein: 5,   serving: 96,  unit: "1봉지" },
+  { name: "화이트하임",      cal: 370, na: 80,  carb: 46, fat: 18,  sugar: 20, protein: 5,   serving: 72,  unit: "1봉지" },
+  { name: "초코하임",        cal: 380, na: 120, carb: 48, fat: 19,  sugar: 22, protein: 5,   serving: 72,  unit: "1봉지" },
+  { name: "참크래커",        cal: 350, na: 520, carb: 50, fat: 13,  sugar: 3,  protein: 6.5, serving: 75,  unit: "1봉지" },
+  { name: "버터와플",        cal: 390, na: 200, carb: 52, fat: 17,  sugar: 18, protein: 5,   serving: 80,  unit: "1봉지" },
+
+  // ── 농심 스낵 추가 ──
+  { name: "바나나킥",        cal: 225, na: 260, carb: 30, fat: 10,  sugar: 8,  protein: 2,   serving: 45,  unit: "1봉지" },
+  { name: "닭다리(과자)",    cal: 240, na: 350, carb: 32, fat: 10,  sugar: 4,  protein: 4,   serving: 50,  unit: "1봉지" },
+  { name: "아몬드새우깡",    cal: 255, na: 280, carb: 33, fat: 12,  sugar: 2,  protein: 4.5, serving: 55,  unit: "1봉지" },
+  { name: "빠새",            cal: 270, na: 320, carb: 36, fat: 12,  sugar: 3,  protein: 4,   serving: 55,  unit: "1봉지" },
+
+  // ── 전통/기타 과자 ──
+  { name: "연양갱",          cal: 180, na: 5,   carb: 43, fat: 0.5, sugar: 30, protein: 2,   serving: 55,  unit: "1개" },
+  { name: "계란과자",        cal: 120, na: 60,  carb: 22, fat: 2.5, sugar: 8,  protein: 3,   serving: 30,  unit: "1봉지" },
+  { name: "건빵",            cal: 280, na: 350, carb: 54, fat: 4,   sugar: 5,  protein: 7,   serving: 70,  unit: "1봉지" },
+  { name: "뻥튀기",          cal: 170, na: 5,   carb: 38, fat: 0.5, sugar: 0.5,protein: 3,   serving: 50,  unit: "1봉지" },
+  { name: "별뽀빠이",        cal: 130, na: 110, carb: 22, fat: 3.5, sugar: 5,  protein: 2.5, serving: 35,  unit: "1봉지" },
+
+  // ── 수입 초콜릿 바 ──
+  { name: "킷캣",            cal: 220, na: 55,  carb: 28, fat: 11,  sugar: 22, protein: 3,   serving: 45,  unit: "1개(4조각)" },
+  { name: "트윅스",          cal: 250, na: 115, carb: 34, fat: 12,  sugar: 25, protein: 2.5, serving: 50,  unit: "1개" },
+  { name: "스니커즈",        cal: 250, na: 125, carb: 33, fat: 12,  sugar: 27, protein: 4.5, serving: 52,  unit: "1개" },
+  { name: "초코바(마스)",    cal: 228, na: 80,  carb: 35, fat: 9,   sugar: 28, protein: 2.5, serving: 51,  unit: "1개" },
+  { name: "페레로로쉐(3개)", cal: 222, na: 27,  carb: 22, fat: 14,  sugar: 18, protein: 3.6, serving: 37.5,unit: "3개" },
+  { name: "토블론",          cal: 210, na: 25,  carb: 26, fat: 11,  sugar: 23, protein: 3,   serving: 40,  unit: "1조각" },
+  { name: "킨더초콜릿",      cal: 220, na: 60,  carb: 24, fat: 12,  sugar: 22, protein: 4.5, serving: 37,  unit: "1개(2조각)" },
+
+  // ── 팝콘 ──
+  { name: "팝콘(영화관 M)",   cal: 380, na: 500, carb: 55, fat: 18,  sugar: 5,  protein: 5,   serving: 100, unit: "M사이즈" },
+  { name: "팝콘(전자레인지)", cal: 350, na: 450, carb: 48, fat: 16,  sugar: 2,  protein: 6,   serving: 100, unit: "1봉지" },
+  { name: "버터팝콘(편의점)", cal: 150, na: 200, carb: 20, fat: 7,   sugar: 2,  protein: 2,   serving: 50,  unit: "1봉지" },
+
+  // ── 견과류 ──
+  { name: "아몬드(무염)",     cal: 164, na: 0,   carb: 6,  fat: 14,  sugar: 1,  protein: 6,   serving: 28,  unit: "1줌(28g)" },
+  { name: "아몬드(허니버터)", cal: 178, na: 80,  carb: 12, fat: 14,  sugar: 8,  protein: 5,   serving: 28,  unit: "1줌(28g)" },
+  { name: "호두",             cal: 185, na: 0,   carb: 4,  fat: 18,  sugar: 0.5,protein: 4,   serving: 28,  unit: "1줌(28g)" },
+  { name: "피스타치오",       cal: 160, na: 0,   carb: 8,  fat: 13,  sugar: 2,  protein: 6,   serving: 28,  unit: "1줌(28g)" },
+  { name: "캐슈넛",           cal: 157, na: 5,   carb: 9,  fat: 12,  sugar: 2,  protein: 5,   serving: 28,  unit: "1줌(28g)" },
+  { name: "마카다미아",       cal: 204, na: 1,   carb: 4,  fat: 21,  sugar: 1,  protein: 2,   serving: 28,  unit: "1줌(28g)" },
+
+  // ── 아이스크림 추가 ──
+  { name: "수박바",           cal: 80,  na: 25,  carb: 20, fat: 0.5, sugar: 14, protein: 0.3, serving: 75,  unit: "1개" },
+  { name: "참붕어싸만코",     cal: 190, na: 75,  carb: 28, fat: 7,   sugar: 18, protein: 3,   serving: 140, unit: "1개" },
+  { name: "폴라포",           cal: 90,  na: 30,  carb: 22, fat: 0.5, sugar: 16, protein: 0.5, serving: 95,  unit: "1개" },
+  { name: "와삭바",           cal: 170, na: 65,  carb: 27, fat: 6,   sugar: 16, protein: 2.5, serving: 120, unit: "1개" },
+  { name: "더위사냥",         cal: 100, na: 35,  carb: 24, fat: 0.5, sugar: 18, protein: 0.5, serving: 105, unit: "1개" },
+  { name: "하드(일반)",       cal: 100, na: 30,  carb: 24, fat: 0.5, sugar: 18, protein: 0.5, serving: 90,  unit: "1개" },
+
   // ── 일식 ──
   { name: "규동(소고기덮밥)",  cal: 650, na: 900,  carb: 85, fat: 20, sugar: 8,  protein: 28, serving: 400, unit: "1인분" },
   { name: "오야코동",          cal: 600, na: 850,  carb: 80, fat: 16, sugar: 6,  protein: 26, serving: 380, unit: "1인분" },
