@@ -408,14 +408,40 @@ function getTodayRecords() {
   return getRecords().filter(r => r.datetime.startsWith(key));
 }
 
+// ── JSONP (CORS 우회) ──
+function jsonpFetch(url, timeout = 12000) {
+  return new Promise((resolve, reject) => {
+    const cbName = '_gscb_' + Date.now();
+    const timer = setTimeout(() => {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('timeout'));
+    }, timeout);
+    window[cbName] = function(data) {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      resolve(data);
+    };
+    const script = document.createElement('script');
+    script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
+    script.onerror = function() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('script load error'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
 // ── API 동기화 ──
 async function syncFood(record) {
   const url = localStorage.getItem(API_KEY);
   if (!url) return false;
   const p = new URLSearchParams({ sheet: 'food', action: 'write', ...record });
   try {
-    const res = await fetch(`${url}?${p}`);
-    const d = await res.json();
+    const d = await jsonpFetch(`${url}?${p}`);
     return d.ok;
   } catch { return false; }
 }
@@ -425,7 +451,7 @@ async function deleteFromSheet(record) {
   if (!url) return;
   const p = new URLSearchParams({ sheet: 'food', action: 'delete',
     datetime: record.datetime, food_name: record.food_name });
-  try { await fetch(`${url}?${p}`); } catch {}
+  try { await jsonpFetch(`${url}?${p}`); } catch {}
 }
 
 // ── 모달 스와이프: 핸들 영역에서만 닫기, pull-to-refresh는 전체 차단 ──
@@ -791,38 +817,23 @@ async function restoreFromSheets() {
   if (!url) { showToast('혈압 앱 설정에서 URL을 먼저 입력하세요'); return; }
 
   showToast('복원 중...');
-  let text = '';
   try {
-    const res = await fetch(`${url}?sheet=food&action=read`, {
-      method: 'GET', mode: 'cors', credentials: 'omit',
-      cache: 'no-cache', redirect: 'follow'
-    });
-    text = await res.text();
+    const json = await jsonpFetch(`${url}?sheet=food&action=read`);
+    if (!json.ok) { showToast('복원 실패: ' + json.error); return; }
+    const incoming = json.data || [];
+    if (incoming.length === 0) { showToast('시트에 식사 데이터가 없습니다'); return; }
+
+    const existing = getRecords();
+    const existSet = new Set(existing.map(r => r.datetime + r.food_name));
+    const added    = incoming.filter(r => !existSet.has(r.datetime + r.food_name))
+                             .map(r => ({ ...r, synced: true }));
+    saveRecords([...existing, ...added]);
+    renderPage();
+    closeRestoreDialog();
+    showToast(`식사 ${added.length}건 복원됨`);
   } catch (e) {
-    alert('네트워크 오류\n\n' + e.message +
-          '\n\n확인 사항:\n· 인터넷 연결\n· Apps Script URL이 올바른지\n· Apps Script 액세스 권한이 "모든 사용자(익명 포함)"인지');
-    return;
+    showToast('연결 실패 — 인터넷 연결을 확인하세요');
   }
-
-  let json;
-  try { json = JSON.parse(text); }
-  catch {
-    alert('응답 형식 오류 (JSON이 아님)\n\nApps Script 웹 앱을 재배포하거나 액세스 권한을 확인하세요.\n\n응답 내용:\n' + text.slice(0, 300));
-    return;
-  }
-
-  if (!json.ok) { showToast('복원 실패: ' + json.error); return; }
-
-  const incoming = json.data || [];
-  if (incoming.length === 0) { showToast('시트에 식사 데이터가 없습니다'); return; }
-
-  const existing = getRecords();
-  const existSet = new Set(existing.map(r => r.datetime + r.food_name));
-  const added    = incoming.filter(r => !existSet.has(r.datetime + r.food_name))
-                           .map(r => ({ ...r, synced: true }));
-  saveRecords([...existing, ...added]);
-  renderPage();
-  showToast(`식사 ${added.length}건 복원됨 (기존 ${existing.length}건 유지)`);
 }
 
 // ── 복원 다이얼로그 ──
