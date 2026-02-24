@@ -484,36 +484,9 @@
       이 URL을 통해 Google Sheets에 데이터가 저장됩니다.
     </div>
     <button class="settings-save-btn" onclick="saveSettings()">저장</button>
-    <button class="settings-save-btn" onclick="restoreFromSheets()"
-            style="margin-top:10px; background:#065f46;">
-      구글 시트에서 데이터 복원
-    </button>
-    <div style="font-size:0.78rem; color:var(--gray-400); margin-top:8px;">
-      사이트 데이터 삭제 후 구글 시트의 기록을 복원할 때 사용하세요.
-    </div>
-
-    <!-- 수동 JSON 붙여넣기 복원 -->
-    <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--gray-200);">
-      <div style="font-size:0.8rem; font-weight:600; color:var(--gray-600); margin-bottom:6px;">
-        자동 복원 실패 시 — 직접 붙여넣기
-      </div>
-      <div style="font-size:0.75rem; color:var(--gray-400); margin-bottom:8px; line-height:1.5;">
-        아래 URL을 브라우저 새 탭에서 열고, 화면에 표시된 JSON 전체를 복사하여 붙여넣으세요.
-      </div>
-      <div id="restore-url-display"
-           style="font-size:0.7rem; background:var(--gray-100); padding:8px 10px;
-                  border-radius:8px; word-break:break-all; margin-bottom:10px;
-                  color:var(--gray-600); font-family:monospace; line-height:1.4;">
-        (URL 저장 후 표시됩니다)
-      </div>
-      <textarea id="restore-json-input"
-        style="width:100%; height:90px; font-size:0.72rem; border:1px solid var(--gray-200);
-               border-radius:8px; padding:8px; font-family:monospace; resize:vertical;"
-        placeholder='{"ok":true,"data":[...]} 형태의 JSON을 여기에 붙여넣으세요'></textarea>
-      <button class="settings-save-btn" onclick="restoreFromJson()"
-              style="margin-top:8px; background:#1d4ed8;">
-        붙여넣기로 혈압 복원
-      </button>
+    <div style="font-size:0.78rem; color:var(--gray-400); margin-top:12px; line-height:1.5;">
+      저장 후 Google Sheets에서 데이터를 자동으로 불러옵니다.<br>
+      로컬 저장은 하지 않으며 항상 Google Sheets를 사용합니다.
     </div>
   </div>
 </div>
@@ -522,10 +495,9 @@
 <div id="toast"></div>
 
 <script>
-// ── 상수 ──
-const STORAGE_KEY = 'bp_records';
+// ── 상수 / 메모리 ──
 const API_URL_KEY = 'bp_api_url';
-const PENDING_KEY = 'bp_pending';
+let allRecords = [];
 
 // ── 혈압 분류 ──
 function classifyBP(sbp, dbp) {
@@ -581,25 +553,6 @@ function onBpInput() {
   }
 }
 
-// ── 로컬 스토리지 ──
-function getRecords() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-  catch { return []; }
-}
-
-function saveRecords(records) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-}
-
-function getPending() {
-  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); }
-  catch { return []; }
-}
-
-function savePending(pending) {
-  localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
-}
-
 // ── API 호출 ──
 async function syncToSheet(record) {
   const apiUrl = localStorage.getItem(API_URL_KEY);
@@ -637,14 +590,42 @@ async function deleteFromSheet(datetime) {
   }
 }
 
-// ── 동기화 상태 표시 ──
+// ── 구글 시트에서 불러오기 ──
+async function fetchFromSheets() {
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) {
+    allRecords = [];
+    renderRecords();
+    return;
+  }
+  showSyncBar('⏳ 불러오는 중...');
+  try {
+    const res = await fetch(`${apiUrl}?sheet=bp&action=read`);
+    const json = await res.json();
+    if (json.ok) {
+      allRecords = json.data || [];
+      renderRecords();
+      hideSyncBar();
+    } else {
+      showSyncBar('❌ 서버 오류: ' + json.error, 'error');
+    }
+  } catch (e) {
+    showSyncBar('❌ 연결 실패 — 인터넷 연결 또는 URL을 확인하세요', 'error');
+  }
+}
+
+// ── 상태 바 ──
 function showSyncBar(msg, type = '') {
   const bar = document.getElementById('sync-bar');
   bar.textContent = msg;
   bar.className = 'show' + (type ? ' ' + type : '');
   if (type === 'synced') {
-    setTimeout(() => { bar.className = ''; }, 3000);
+    setTimeout(hideSyncBar, 3000);
   }
+}
+
+function hideSyncBar() {
+  document.getElementById('sync-bar').className = '';
 }
 
 // ── 저장 ──
@@ -657,127 +638,64 @@ async function saveRecord() {
   if (!sbp || sbp < 60 || sbp > 250) return showToast('올바른 수축기 값을 입력하세요 (60-250)');
   if (!dbp || dbp < 40 || dbp > 150) return showToast('올바른 이완기 값을 입력하세요 (40-150)');
 
-  const record = {
-    datetime: currentDatetime,
-    systolic: sbp,
-    diastolic: dbp,
-    pulse,
-    notes,
-    synced: false
-  };
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) {
+    showSyncBar('⚠️ 설정에서 Apps Script URL을 먼저 입력하세요');
+    setTimeout(openSettings, 800);
+    return;
+  }
 
-  // 1. 로컬 저장
-  const records = getRecords();
-  records.unshift(record);
-  saveRecords(records);
+  const record = { datetime: currentDatetime, systolic: sbp, diastolic: dbp, pulse, notes };
 
-  // 2. 폼 초기화
+  showSyncBar('☁️ 저장 중...');
+  const ok = await syncToSheet(record);
+  if (!ok) {
+    showSyncBar('❌ 저장 실패 — 인터넷 연결을 확인하세요', 'error');
+    return;
+  }
+
+  // 폼 초기화
   document.getElementById('sbp').value = '';
   document.getElementById('dbp').value = '';
   document.getElementById('pulse').value = '';
   document.getElementById('notes').value = '';
   document.getElementById('bp-badge').style.display = 'none';
   setNow();
-  renderRecords();
   showToast('저장되었습니다');
 
-  // 3. 동기화 시도
-  const apiUrl = localStorage.getItem(API_URL_KEY);
-  if (!apiUrl) {
-    showSyncBar('⚠️ Apps Script URL 미설정 — 설정에서 입력하세요');
-    return;
-  }
-
-  showSyncBar('☁️ 동기화 중...');
-  const ok = await syncToSheet(record);
-  if (ok) {
-    records[0].synced = true;
-    saveRecords(records);
-    renderRecords();
-    showSyncBar('✓ 동기화 완료', 'synced');
-  } else {
-    // 보류 큐에 추가
-    const pending = getPending();
-    pending.push(record);
-    savePending(pending);
-    showSyncBar('⚠️ 동기화 실패 — 나중에 재시도됩니다', 'error');
-  }
-}
-
-// ── 수동 동기화 ──
-async function syncNow() {
-  const pending = getPending();
-  if (pending.length === 0) {
-    showToast('동기화할 항목이 없습니다');
-    return;
-  }
-
-  const apiUrl = localStorage.getItem(API_URL_KEY);
-  if (!apiUrl) {
-    openSettings();
-    return;
-  }
-
-  showSyncBar(`☁️ ${pending.length}개 항목 동기화 중...`);
-  const failed = [];
-
-  for (const record of pending) {
-    const ok = await syncToSheet(record);
-    if (!ok) failed.push(record);
-  }
-
-  savePending(failed);
-
-  // 로컬 기록에도 synced 마킹
-  const records = getRecords();
-  for (const r of records) {
-    if (!r.synced && !failed.find(f => f.datetime === r.datetime)) {
-      r.synced = true;
-    }
-  }
-  saveRecords(records);
-  renderRecords();
-
-  if (failed.length === 0) {
-    showSyncBar(`✓ ${pending.length}개 동기화 완료`, 'synced');
-  } else {
-    showSyncBar(`⚠️ ${failed.length}개 실패, ${pending.length - failed.length}개 완료`, 'error');
-  }
+  // 시트에서 새로 불러오기
+  await fetchFromSheets();
 }
 
 // ── 기록 삭제 ──
 async function deleteRecord(datetime) {
   if (!confirm('이 기록을 삭제할까요?')) return;
 
-  const records = getRecords().filter(r => r.datetime !== datetime);
-  saveRecords(records);
-  renderRecords();
-  showToast('삭제되었습니다');
-
-  // 시트에서도 삭제
-  const apiUrl = localStorage.getItem(API_URL_KEY);
-  if (apiUrl) {
-    deleteFromSheet(datetime);
+  showSyncBar('🗑 삭제 중...');
+  const ok = await deleteFromSheet(datetime);
+  if (!ok) {
+    showSyncBar('❌ 삭제 실패 — 인터넷 연결을 확인하세요', 'error');
+    return;
   }
+  showToast('삭제되었습니다');
+  await fetchFromSheets();
 }
 
 // ── 기록 렌더링 ──
 function renderRecords() {
-  const records = getRecords().slice(0, 10); // 최근 10개
+  const records = allRecords.slice(0, 10); // 최근 10개
   const container = document.getElementById('records-list');
 
   if (records.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">📋</div>
-        <div>아직 기록이 없습니다</div>
-      </div>`;
+    const apiUrl = localStorage.getItem(API_URL_KEY);
+    container.innerHTML = apiUrl
+      ? `<div class="empty-state"><div class="icon">📋</div><div>아직 기록이 없습니다</div></div>`
+      : `<div class="empty-state"><div class="icon">⚙️</div><div>설정에서 Apps Script URL을 입력하세요</div></div>`;
     return;
   }
 
   container.innerHTML = records.map(r => {
     const cls = classifyBP(r.systolic, r.diastolic);
-    const syncIcon = r.synced ? '☁️' : '⏳';
     const pulseInfo = r.pulse ? `♥ ${r.pulse} bpm` : '';
     const noteInfo = r.notes ? ` · ${r.notes}` : '';
     return `
@@ -789,7 +707,7 @@ function renderRecords() {
         </div>
         <div class="record-right">
           <div class="record-badge" style="background:${cls.bg}; color:${cls.color}">${cls.label}</div>
-          <div class="record-pulse">${pulseInfo} ${syncIcon}</div>
+          <div class="record-pulse">${pulseInfo}</div>
         </div>
         <button class="delete-btn" onclick="deleteRecord('${r.datetime}')" title="삭제">✕</button>
       </div>`;
@@ -804,79 +722,9 @@ function showToast(msg) {
   setTimeout(() => toast.classList.remove('show'), 2200);
 }
 
-// ── 구글 시트 복원 ──
-async function restoreFromSheets() {
-  const apiUrl = localStorage.getItem(API_URL_KEY);
-  if (!apiUrl) { showToast('먼저 설정에서 URL을 저장하세요'); return; }
-
-  showToast('복원 중...');
-  let text = '';
-  try {
-    const res = await fetch(`${apiUrl}?sheet=bp&action=read`, {
-      method: 'GET', mode: 'cors', credentials: 'omit',
-      cache: 'no-cache', redirect: 'follow'
-    });
-    text = await res.text();
-  } catch (e) {
-    alert('네트워크 오류\n\n' + e.message +
-          '\n\n확인 사항:\n· 인터넷 연결\n· Apps Script URL이 올바른지\n· Apps Script 액세스 권한이 "모든 사용자(익명 포함)"인지');
-    return;
-  }
-
-  let json;
-  try { json = JSON.parse(text); }
-  catch {
-    alert('응답 형식 오류 (JSON이 아님)\n\nApps Script 웹 앱을 재배포하거나 액세스 권한을 확인하세요.\n\n응답 내용:\n' + text.slice(0, 300));
-    return;
-  }
-
-  if (!json.ok) { showToast('복원 실패: ' + json.error); return; }
-
-  const incoming = json.data || [];
-  if (incoming.length === 0) { showToast('시트에 데이터가 없습니다'); return; }
-
-  const existing = getRecords();
-  const existSet = new Set(existing.map(r => r.datetime));
-  const added    = incoming.filter(r => !existSet.has(r.datetime))
-                           .map(r => ({ ...r, synced: true }));
-  saveRecords([...existing, ...added]
-    .sort((a, b) => new Date(b.datetime) - new Date(a.datetime)));
-  renderRecords();
-  closeSettings();
-  showToast(`혈압 ${added.length}건 복원됨 (기존 ${existing.length}건 유지)`);
-}
-
-// ── JSON 붙여넣기 복원 ──
-function restoreFromJson() {
-  const text = document.getElementById('restore-json-input').value.trim();
-  if (!text) { showToast('JSON을 붙여넣어 주세요'); return; }
-  let json;
-  try { json = JSON.parse(text); }
-  catch { alert('JSON 형식 오류\n\n올바른 JSON인지 확인하세요.\n\n(앱스크립트 URL을 브라우저에서 열면 JSON이 표시됩니다)'); return; }
-
-  const data = json.data || (Array.isArray(json) ? json : null);
-  if (!data) { alert('데이터를 찾을 수 없습니다.\n\n{"ok":true,"data":[...]} 또는 배열 형태여야 합니다.'); return; }
-  if (data.length === 0) { showToast('복원할 데이터가 없습니다'); return; }
-
-  const existing = getRecords();
-  const existSet = new Set(existing.map(r => r.datetime));
-  const added = data.filter(r => r.datetime && !existSet.has(r.datetime))
-                    .map(r => ({ ...r, synced: true }));
-  saveRecords([...existing, ...added]
-    .sort((a, b) => new Date(b.datetime) - new Date(a.datetime)));
-  renderRecords();
-  closeSettings();
-  showToast(`혈압 ${added.length}건 복원됨 (기존 ${existing.length}건 유지)`);
-}
-
 // ── 설정 ──
 function openSettings() {
-  const current = localStorage.getItem(API_URL_KEY) || '';
-  document.getElementById('api-url-input').value = current;
-  const urlDisplay = document.getElementById('restore-url-display');
-  urlDisplay.textContent = current
-    ? current + '?sheet=bp&action=read'
-    : '(URL 저장 후 표시됩니다)';
+  document.getElementById('api-url-input').value = localStorage.getItem(API_URL_KEY) || '';
   document.getElementById('settings-screen').style.display = 'block';
 }
 
@@ -891,33 +739,21 @@ function saveSettings() {
     return;
   }
   localStorage.setItem(API_URL_KEY, url);
-  const urlDisplay = document.getElementById('restore-url-display');
-  if (urlDisplay) urlDisplay.textContent = url ? url + '?sheet=bp&action=read' : '(URL 저장 후 표시됩니다)';
   closeSettings();
   showToast('설정이 저장되었습니다');
-
-  // URL 새로 설정되면 pending 동기화 시도
-  if (url) syncNow();
+  if (url) fetchFromSheets();
 }
 
 // ── 초기화 ──
 function init() {
   setNow();
-  renderRecords();
-
-  // 설정 안 되어 있으면 설정 화면 표시
   const apiUrl = localStorage.getItem(API_URL_KEY);
   if (!apiUrl) {
+    renderRecords(); // "URL을 입력하세요" 안내 표시
     setTimeout(openSettings, 500);
+  } else {
+    fetchFromSheets();
   }
-
-  // 미동기화 항목 자동 재시도
-  const pending = getPending();
-  if (pending.length > 0 && apiUrl) {
-    showSyncBar(`⏳ 미동기화 ${pending.length}개 항목 있음 — 동기화 탭을 누르세요`);
-  }
-
-  // 서비스워커 등록
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
