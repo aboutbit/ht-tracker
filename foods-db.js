@@ -525,6 +525,123 @@ const FOOD_DB = [
   { name: "도토리묵무침",   cal: 100, na: 400,  carb: 15, fat: 3,  sugar: 2,  protein: 2,  serving: 200, unit: "1인분" },
   { name: "파전(해물)",     cal: 420, na: 800,  carb: 50, fat: 16, sugar: 3,  protein: 18, serving: 300, unit: "1인분" },
   { name: "콩국(두유형)",   cal: 180, na: 100,  carb: 12, fat: 10, sugar: 3,  protein: 14, serving: 300, unit: "1컵" },
+
+  // ── 보리차/곡물차/무가당차 ──
+  { name: "하늘보리(500ml)",         cal: 0,   na: 10,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "하늘보리(1.5L)",          cal: 0,   na: 30,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 1500, unit: "1.5L" },
+  { name: "옥수수수염차(500ml)",     cal: 0,   na: 20,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "결명자차(500ml)",         cal: 0,   na: 10,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "보리차(500ml)",           cal: 0,   na: 5,   carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "둥굴레차(500ml)",         cal: 0,   na: 10,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "현미녹차(500ml)",         cal: 0,   na: 10,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "17차(500ml)",             cal: 10,  na: 15,  carb: 2,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "옥수수차(500ml)",         cal: 0,   na: 10,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "녹차(페트, 500ml)",       cal: 5,   na: 10,  carb: 1,    fat: 0,   sugar: 0.5, protein: 0.3, serving: 500,  unit: "500ml" },
+  { name: "홍차(페트, 500ml)",       cal: 50,  na: 10,  carb: 13,   fat: 0,   sugar: 12,  protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "헛개차(광동, 500ml)",     cal: 5,   na: 15,  carb: 1,    fat: 0,   sugar: 0.5, protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "오미자차(500ml)",         cal: 45,  na: 10,  carb: 11,   fat: 0,   sugar: 10,  protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "도라지차(500ml)",         cal: 5,   na: 10,  carb: 1,    fat: 0,   sugar: 0.5, protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "히비스커스차(500ml)",     cal: 10,  na: 5,   carb: 2.5,  fat: 0,   sugar: 2,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "루이보스차(500ml)",       cal: 0,   na: 5,   carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "캐모마일차(300ml)",       cal: 0,   na: 5,   carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 300,  unit: "1잔" },
+  { name: "페퍼민트차(300ml)",       cal: 0,   na: 5,   carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 300,  unit: "1잔" },
+
+  // ── 탄산음료 추가 ──
+  { name: "코카콜라(355ml캔)",       cal: 139, na: 36,  carb: 39,   fat: 0,   sugar: 39,  protein: 0,   serving: 355,  unit: "355ml캔" },
+  { name: "코카콜라(500ml)",         cal: 210, na: 55,  carb: 57,   fat: 0,   sugar: 57,  protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "코카콜라 제로(355ml)",    cal: 0,   na: 30,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 355,  unit: "355ml캔" },
+  { name: "코카콜라 제로(500ml)",    cal: 0,   na: 45,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "펩시콜라(355ml)",         cal: 150, na: 30,  carb: 41,   fat: 0,   sugar: 41,  protein: 0,   serving: 355,  unit: "355ml캔" },
+  { name: "펩시 제로(355ml)",        cal: 0,   na: 35,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 355,  unit: "355ml캔" },
+  { name: "칠성사이다(355ml캔)",     cal: 140, na: 30,  carb: 38,   fat: 0,   sugar: 38,  protein: 0,   serving: 355,  unit: "355ml캔" },
+  { name: "칠성사이다(500ml)",       cal: 200, na: 45,  carb: 55,   fat: 0,   sugar: 55,  protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "칠성사이다 제로(355ml)", cal: 0,   na: 30,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 355,  unit: "355ml캔" },
+  { name: "스프라이트(355ml)",       cal: 140, na: 55,  carb: 39,   fat: 0,   sugar: 39,  protein: 0,   serving: 355,  unit: "355ml캔" },
+  { name: "환타 오렌지(355ml)",      cal: 165, na: 55,  carb: 46,   fat: 0,   sugar: 46,  protein: 0,   serving: 355,  unit: "355ml캔" },
+  { name: "환타 포도(355ml)",        cal: 155, na: 50,  carb: 43,   fat: 0,   sugar: 43,  protein: 0,   serving: 355,  unit: "355ml캔" },
+  { name: "닥터페퍼(355ml)",         cal: 150, na: 50,  carb: 40,   fat: 0,   sugar: 40,  protein: 0,   serving: 355,  unit: "355ml캔" },
+  { name: "데미소다 사과(250ml)",    cal: 70,  na: 20,  carb: 18,   fat: 0,   sugar: 17,  protein: 0,   serving: 250,  unit: "250ml캔" },
+  { name: "트로피카나 스파클링(350ml)",cal:80, na: 10,  carb: 21,   fat: 0,   sugar: 20,  protein: 0,   serving: 350,  unit: "350ml" },
+
+  // ── 이온/스포츠 음료 (브랜드) ──
+  { name: "포카리스웨트(340ml)",     cal: 88,  na: 333, carb: 21,   fat: 0,   sugar: 19,  protein: 0,   serving: 340,  unit: "340ml캔" },
+  { name: "포카리스웨트(500ml)",     cal: 130, na: 490, carb: 31,   fat: 0,   sugar: 28,  protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "포카리스웨트(900ml)",     cal: 234, na: 882, carb: 56,   fat: 0,   sugar: 50,  protein: 0,   serving: 900,  unit: "900ml" },
+  { name: "게토레이(600ml)",         cal: 120, na: 270, carb: 33,   fat: 0,   sugar: 33,  protein: 0,   serving: 600,  unit: "600ml" },
+  { name: "파워에이드(600ml)",       cal: 150, na: 300, carb: 40,   fat: 0,   sugar: 38,  protein: 0,   serving: 600,  unit: "600ml" },
+  { name: "토레타(500ml)",           cal: 50,  na: 310, carb: 12,   fat: 0,   sugar: 11,  protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "몸이가벼워지는차(500ml)", cal: 0,   na: 20,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+
+  // ── RTD 커피 (편의점/자판기) ──
+  { name: "레쓰비(175ml)",           cal: 84,  na: 40,  carb: 13.5, fat: 2.2, sugar: 11.7,protein: 0.9, serving: 175,  unit: "175ml캔" },
+  { name: "맥심 TOP(275ml)",         cal: 168, na: 65,  carb: 26,   fat: 5.5, sugar: 22,  protein: 2,   serving: 275,  unit: "275ml캔" },
+  { name: "칸타타 아메리카노(275ml)",cal: 10,  na: 35,  carb: 1.5,  fat: 0,   sugar: 0.5, protein: 0.3, serving: 275,  unit: "275ml캔" },
+  { name: "칸타타 콘트라베이스(275ml)",cal:140,na: 75,  carb: 22,   fat: 4,   sugar: 19,  protein: 3.5, serving: 275,  unit: "275ml캔" },
+  { name: "조지아 오리지널(240ml)",  cal: 110, na: 80,  carb: 17,   fat: 3.5, sugar: 14,  protein: 1.5, serving: 240,  unit: "240ml캔" },
+  { name: "조지아 아메리카노(240ml)",cal: 10,  na: 25,  carb: 1.5,  fat: 0,   sugar: 0.5, protein: 0.3, serving: 240,  unit: "240ml캔" },
+  { name: "스타벅스 돌체라떼(355ml)",cal: 220, na: 140, carb: 34,   fat: 6,   sugar: 30,  protein: 8,   serving: 355,  unit: "355ml병" },
+  { name: "스타벅스 아메리카노(355ml)",cal:10, na: 10,  carb: 1,    fat: 0,   sugar: 0,   protein: 0.5, serving: 355,  unit: "355ml병" },
+  { name: "스타벅스 프라푸치노(281ml)",cal:200,na: 90,  carb: 36,   fat: 4.5, sugar: 32,  protein: 5,   serving: 281,  unit: "281ml병" },
+  { name: "빙그레 아카페라(270ml)",  cal: 120, na: 60,  carb: 18,   fat: 3.5, sugar: 16,  protein: 2,   serving: 270,  unit: "270ml캔" },
+
+  // ── 과즙/과일 음료 ──
+  { name: "미닛메이드 오렌지(350ml)",cal: 140, na: 15,  carb: 36,   fat: 0,   sugar: 33,  protein: 0.5, serving: 350,  unit: "350ml" },
+  { name: "선키스트 오렌지(340ml)", cal: 155, na: 20,  carb: 39,   fat: 0,   sugar: 37,  protein: 0.5, serving: 340,  unit: "340ml캔" },
+  { name: "델몬트 오렌지(250ml)",   cal: 110, na: 10,  carb: 27,   fat: 0,   sugar: 25,  protein: 1,   serving: 250,  unit: "250ml" },
+  { name: "복숭아 음료(238ml)",     cal: 110, na: 15,  carb: 27,   fat: 0,   sugar: 25,  protein: 0.5, serving: 238,  unit: "238ml" },
+  { name: "포도 음료(250ml)",       cal: 165, na: 10,  carb: 42,   fat: 0,   sugar: 38,  protein: 0.5, serving: 250,  unit: "250ml" },
+  { name: "사과 음료(200ml)",       cal: 90,  na: 5,   carb: 22,   fat: 0,   sugar: 20,  protein: 0.3, serving: 200,  unit: "200ml" },
+  { name: "망고 음료(250ml)",       cal: 150, na: 5,   carb: 38,   fat: 0,   sugar: 34,  protein: 0.5, serving: 250,  unit: "250ml" },
+  { name: "파인애플 주스(250ml)",   cal: 140, na: 5,   carb: 34,   fat: 0,   sugar: 30,  protein: 0.5, serving: 250,  unit: "250ml" },
+  { name: "제주 감귤 음료(350ml)",  cal: 140, na: 10,  carb: 35,   fat: 0,   sugar: 32,  protein: 0.5, serving: 350,  unit: "350ml" },
+  { name: "알로에 음료(240ml)",     cal: 70,  na: 20,  carb: 17,   fat: 0,   sugar: 15,  protein: 0,   serving: 240,  unit: "240ml" },
+  { name: "코코넛워터(250ml)",      cal: 50,  na: 80,  carb: 12,   fat: 0.5, sugar: 10,  protein: 0.5, serving: 250,  unit: "250ml" },
+  { name: "V8 야채주스(240ml)",     cal: 50,  na: 480, carb: 10,   fat: 0,   sugar: 8,   protein: 1.5, serving: 240,  unit: "240ml" },
+  { name: "팔도 식혜(250ml캔)",     cal: 130, na: 25,  carb: 31,   fat: 0,   sugar: 28,  protein: 0.5, serving: 250,  unit: "250ml캔" },
+  { name: "매실 음료(500ml)",       cal: 130, na: 10,  carb: 32,   fat: 0,   sugar: 30,  protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "유자차(병, 500ml)",      cal: 165, na: 10,  carb: 41,   fat: 0,   sugar: 38,  protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "생강차(병, 500ml)",      cal: 100, na: 5,   carb: 25,   fat: 0,   sugar: 23,  protein: 0,   serving: 500,  unit: "500ml" },
+
+  // ── 우유 추가 ──
+  { name: "서울우유(500ml)",        cal: 325, na: 225, carb: 24,   fat: 17.5,sugar: 22.5,protein: 16.5,serving: 500,  unit: "500ml" },
+  { name: "저지방우유(200ml)",      cal: 80,  na: 95,  carb: 10,   fat: 2,   sugar: 9.5, protein: 6.5, serving: 200,  unit: "200ml" },
+  { name: "무지방우유(200ml)",      cal: 70,  na: 100, carb: 10,   fat: 0,   sugar: 9.5, protein: 6.5, serving: 200,  unit: "200ml" },
+  { name: "초코우유(240ml)",        cal: 160, na: 120, carb: 26,   fat: 4,   sugar: 22,  protein: 6,   serving: 240,  unit: "240ml" },
+  { name: "딸기우유(240ml)",        cal: 150, na: 110, carb: 24,   fat: 4,   sugar: 20,  protein: 5.5, serving: 240,  unit: "240ml" },
+  { name: "초코우유(소, 125ml)",    cal: 90,  na: 60,  carb: 14,   fat: 2.5, sugar: 12,  protein: 3.5, serving: 125,  unit: "125ml" },
+  { name: "흰우유(소, 125ml)",      cal: 80,  na: 55,  carb: 6,    fat: 4.4, sugar: 5.8, protein: 4.1, serving: 125,  unit: "125ml" },
+  { name: "연세우유(200ml)",        cal: 128, na: 88,  carb: 9.4,  fat: 6.9, sugar: 8.8, protein: 6.5, serving: 200,  unit: "200ml" },
+
+  // ── 두유 추가 ──
+  { name: "베지밀A(190ml)",         cal: 90,  na: 50,  carb: 10,   fat: 4,   sugar: 5,   protein: 6,   serving: 190,  unit: "190ml" },
+  { name: "베지밀B(190ml)",         cal: 100, na: 75,  carb: 12,   fat: 4,   sugar: 8,   protein: 6,   serving: 190,  unit: "190ml" },
+  { name: "삼육두유(190ml)",        cal: 85,  na: 60,  carb: 8,    fat: 4,   sugar: 4,   protein: 6,   serving: 190,  unit: "190ml" },
+  { name: "아몬드브리즈(190ml)",    cal: 30,  na: 100, carb: 3,    fat: 2.5, sugar: 0,   protein: 1,   serving: 190,  unit: "190ml" },
+  { name: "귀리우유(200ml)",        cal: 130, na: 100, carb: 20,   fat: 4,   sugar: 10,  protein: 3.5, serving: 200,  unit: "200ml" },
+
+  // ── 야쿠르트/유산균 음료 ──
+  { name: "야쿠르트(65ml)",         cal: 50,  na: 20,  carb: 11,   fat: 0.4, sugar: 10,  protein: 0.8, serving: 65,   unit: "1개(65ml)" },
+  { name: "야쿠르트 라이트(65ml)",  cal: 30,  na: 20,  carb: 6,    fat: 0.1, sugar: 5.5, protein: 0.8, serving: 65,   unit: "1개(65ml)" },
+  { name: "쾌변(150ml)",            cal: 80,  na: 55,  carb: 15,   fat: 1,   sugar: 13,  protein: 2,   serving: 150,  unit: "150ml" },
+  { name: "헬리오스(200ml)",        cal: 130, na: 80,  carb: 21,   fat: 2.5, sugar: 18,  protein: 4.5, serving: 200,  unit: "200ml" },
+  { name: "메치니코프(150ml)",      cal: 100, na: 75,  carb: 16,   fat: 2,   sugar: 14,  protein: 4,   serving: 150,  unit: "150ml" },
+
+  // ── 기능성/건강 음료 ──
+  { name: "비타500(100ml)",         cal: 30,  na: 35,  carb: 7.5,  fat: 0,   sugar: 6.5, protein: 0.3, serving: 100,  unit: "100ml" },
+  { name: "박카스(120ml)",          cal: 60,  na: 15,  carb: 13,   fat: 0,   sugar: 12,  protein: 0,   serving: 120,  unit: "120ml병" },
+  { name: "박카스F(120ml)",         cal: 60,  na: 15,  carb: 13,   fat: 0,   sugar: 12,  protein: 0,   serving: 120,  unit: "120ml병" },
+  { name: "컨디션(100ml)",          cal: 56,  na: 20,  carb: 12.9, fat: 0.1, sugar: 11.6,protein: 0.4, serving: 100,  unit: "100ml병" },
+  { name: "홍삼 음료(80ml)",        cal: 50,  na: 10,  carb: 12,   fat: 0,   sugar: 10,  protein: 0.5, serving: 80,   unit: "1포(80ml)" },
+  { name: "모닝케어(100ml)",        cal: 56,  na: 20,  carb: 12.9, fat: 0.1, sugar: 11.6,protein: 0.4, serving: 100,  unit: "100ml병" },
+  { name: "비타민워터(500ml)",      cal: 125, na: 0,   carb: 33,   fat: 0,   sugar: 32,  protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "상쾌환(180ml)",          cal: 80,  na: 20,  carb: 18,   fat: 0,   sugar: 16,  protein: 0.5, serving: 180,  unit: "180ml" },
+
+  // ── 생수/탄산수 ──
+  { name: "제주삼다수(500ml)",      cal: 0,   na: 6,   carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "아이시스(500ml)",        cal: 0,   na: 0,   carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "탄산수(플레인, 500ml)",  cal: 0,   na: 20,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 500,  unit: "500ml" },
+  { name: "씨그램(탄산수, 355ml)",  cal: 0,   na: 15,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 355,  unit: "355ml캔" },
+  { name: "페리에(330ml)",          cal: 0,   na: 10,  carb: 0,    fat: 0,   sugar: 0,   protein: 0,   serving: 330,  unit: "330ml" },
 ];
 
 // 검색 함수: 2글자 이상 입력 시 이름 포함 검색
