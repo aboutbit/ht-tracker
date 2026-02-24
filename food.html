@@ -375,12 +375,14 @@ function openModal(meal) {
   const modalEl = overlay.querySelector('.modal');
   modalEl.style.transform = '';
   overlay.classList.add('open');
+  document.body.style.overscrollBehavior = 'none'; // pull-to-refresh 차단
   setTimeout(() => document.getElementById('food-search').focus(), 100);
 }
 
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
   document.getElementById('autocomplete').classList.remove('show');
+  document.body.style.overscrollBehavior = ''; // pull-to-refresh 복원
 }
 
 function closeModalIf(e) {
@@ -406,8 +408,11 @@ function closeModalIf(e) {
       if (!isDragging) return;
       if (modalEl.scrollTop > 0) { isDragging = false; return; }
       const dy = e.touches[0].clientY - startY;
-      if (dy > 0) modalEl.style.transform = `translateY(${dy}px)`;
-    }, { passive: true });
+      if (dy > 0) {
+        e.preventDefault(); // 브라우저 pull-to-refresh 차단
+        modalEl.style.transform = `translateY(${dy}px)`;
+      }
+    }, { passive: false });
 
     modalEl.addEventListener('touchend', e => {
       if (!isDragging) return;
