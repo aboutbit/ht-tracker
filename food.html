@@ -126,6 +126,14 @@
     .meal-opt.selected { border-color: var(--green-l); background: var(--green-bg);
                          color: var(--green); font-weight: 600; }
 
+    .serving-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .serving-label { font-size: 0.82rem; font-weight: 600; color: var(--gray-600); white-space: nowrap; }
+    .serving-btns { display: flex; gap: 6px; flex: 1; }
+    .serving-btn { flex: 1; border: 2px solid var(--gray-200); border-radius: 10px; padding: 8px 4px;
+                   text-align: center; font-size: 0.82rem; cursor: pointer; background: white; }
+    .serving-btn.selected { border-color: var(--green-l); background: var(--green-bg);
+                             color: var(--green); font-weight: 600; }
+
     .modal-save-btn { width: 100%; background: var(--green); color: white; border: none;
                       border-radius: 14px; padding: 15px; font-size: 0.95rem;
                       font-weight: 600; cursor: pointer; margin-top: 16px; }
@@ -220,6 +228,17 @@
       <button class="meal-opt" data-meal="간식" onclick="selectMeal(this)">🍎 간식</button>
     </div>
 
+    <div class="serving-row">
+      <span class="serving-label">인분</span>
+      <div class="serving-btns">
+        <button class="serving-btn" data-val="0.5" onclick="setServing(0.5)">½</button>
+        <button class="serving-btn selected" data-val="1" onclick="setServing(1)">1</button>
+        <button class="serving-btn" data-val="1.5" onclick="setServing(1.5)">1.5</button>
+        <button class="serving-btn" data-val="2" onclick="setServing(2)">2</button>
+      </div>
+      <span style="font-size:0.82rem; color:var(--gray-600)">인분</span>
+    </div>
+
     <input type="text" id="food-search" class="search-input"
            placeholder="음식 이름 검색 (예: 김치찌개, 라면)"
            oninput="onSearch(this.value)" autocomplete="off">
@@ -286,6 +305,8 @@ const MEAL_EMOJI = { '아침': '🌅', '점심': '☀️', '저녁': '🌙', '�
 
 let currentDate = new Date();
 let selectedMeal = '아침';
+let baseFood = null;
+let currentServing = 1;
 
 // ── 날짜 유틸 ──
 function dateKey(d) {
@@ -368,6 +389,26 @@ function clearForm() {
   ['food-search','f-name','f-na','f-cal','f-carb','f-fat','f-sugar','f-protein','f-notes']
     .forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('autocomplete').classList.remove('show');
+  baseFood = null;
+  currentServing = 1;
+  document.querySelectorAll('.serving-btn').forEach(b => {
+    b.classList.toggle('selected', parseFloat(b.dataset.val) === 1);
+  });
+}
+
+function setServing(val) {
+  currentServing = val;
+  document.querySelectorAll('.serving-btn').forEach(b => {
+    b.classList.toggle('selected', parseFloat(b.dataset.val) === val);
+  });
+  if (baseFood) {
+    document.getElementById('f-na').value      = Math.round(baseFood.na * val);
+    document.getElementById('f-cal').value     = Math.round(baseFood.cal * val);
+    document.getElementById('f-carb').value    = Math.round(baseFood.carb * val * 10) / 10;
+    document.getElementById('f-fat').value     = Math.round(baseFood.fat * val * 10) / 10;
+    document.getElementById('f-sugar').value   = Math.round(baseFood.sugar * val * 10) / 10;
+    document.getElementById('f-protein').value = Math.round(baseFood.protein * val * 10) / 10;
+  }
 }
 
 // ── 검색 ──
@@ -387,6 +428,11 @@ function onSearch(q) {
 }
 
 function selectFood(f) {
+  baseFood = f;
+  currentServing = 1;
+  document.querySelectorAll('.serving-btn').forEach(b => {
+    b.classList.toggle('selected', parseFloat(b.dataset.val) === 1);
+  });
   document.getElementById('f-name').value    = f.name;
   document.getElementById('f-na').value      = f.na;
   document.getElementById('f-cal').value     = f.cal;
@@ -417,6 +463,7 @@ async function saveFood() {
     fat:       parseFloat(document.getElementById('f-fat').value)      || 0,
     sugar:     parseFloat(document.getElementById('f-sugar').value)   || 0,
     protein:   parseFloat(document.getElementById('f-protein').value) || 0,
+    servings:  currentServing,
     notes:     document.getElementById('f-notes').value.trim(),
     synced:    false
   };
@@ -491,18 +538,22 @@ function renderPage() {
         </div>
         ${items.length === 0
           ? `<div class="empty-meal">기록 없음</div>`
-          : items.map(r => `
+          : items.map(r => {
+              const servingText = r.servings && r.servings !== 1 ? `${r.servings}인분` : '';
+              const subParts = [servingText, r.notes].filter(Boolean);
+              return `
             <div class="food-item">
               <div>
                 <div class="food-name">${r.food_name}</div>
-                <div class="food-sub">${r.notes || ''}</div>
+                <div class="food-sub">${subParts.join(' · ')}</div>
               </div>
               <div class="food-right">
                 <div class="food-na">Na ${Math.round(r.sodium)}mg</div>
                 <div class="food-cal">${Math.round(r.calories)}kcal</div>
               </div>
               <button class="food-del" onclick="deleteFood('${r.datetime}','${r.food_name.replace(/'/g,"\\'")}')">✕</button>
-            </div>`).join('')}
+            </div>`;
+            }).join('')}
       </div>`;
   }).join('');
 }
