@@ -275,9 +275,7 @@
 <div id="toast"></div>
 
 <script>
-const STORAGE_KEY = 'exercise_records';
 const API_URL_KEY = 'bp_api_url';
-const PENDING_KEY = 'exercise_pending';
 
 let currentType = 'isometric';
 let currentDatetime = new Date().toISOString();
@@ -314,23 +312,62 @@ function formatDt(isoStr) {
   });
 }
 
-// ── 로컬 스토리지 ──
-function getRecords() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+// ── 메모리 캐시 ──
+let allRecords = [];
+
+// ── JSONP (CORS 우회) ──
+function jsonpFetch(url, timeout = 12000) {
+  return new Promise((resolve, reject) => {
+    const cbName = '_gscb_' + Date.now();
+    const timer = setTimeout(() => {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('timeout'));
+    }, timeout);
+    window[cbName] = function(data) {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      resolve(data);
+    };
+    const script = document.createElement('script');
+    script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
+    script.onerror = function() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('script load error'));
+    };
+    document.head.appendChild(script);
+  });
 }
-function saveRecords(r) { localStorage.setItem(STORAGE_KEY, JSON.stringify(r)); }
-function getPending() {
-  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch { return []; }
+
+// ── 시트에서 불러오기 ──
+async function fetchFromSheets() {
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) { allRecords = []; renderRecords(); return; }
+  showSyncBar('⏳ 불러오는 중...');
+  try {
+    const json = await jsonpFetch(`${apiUrl}?sheet=exercise&action=read`);
+    if (json.ok) {
+      allRecords = json.data || [];
+      renderRecords();
+      hideSyncBar();
+    } else {
+      showSyncBar('❌ 서버 오류: ' + json.error, 'error');
+    }
+  } catch(e) {
+    const msg = e.message === 'timeout' ? 'Apps Script 재배포 필요' : '인터넷 연결 확인';
+    showSyncBar('❌ 연결 실패 — ' + msg, 'error');
+  }
 }
-function savePending(p) { localStorage.setItem(PENDING_KEY, JSON.stringify(p)); }
 
 // ── API 동기화 ──
 async function syncToSheet(record) {
   const apiUrl = localStorage.getItem(API_URL_KEY);
   if (!apiUrl) return false;
   const params = new URLSearchParams({
-    sheet: 'exercise',
-    action: 'write',
+    sheet: 'exercise', action: 'write',
     datetime: record.datetime,
     exercise_type: record.exercise_type,
     name: record.name,
@@ -340,8 +377,7 @@ async function syncToSheet(record) {
     notes: record.notes || ''
   });
   try {
-    const res = await fetch(`${apiUrl}?${params}`, { method: 'GET' });
-    const data = await res.json();
+    const data = await jsonpFetch(`${apiUrl}?${params}`);
     return data.ok === true;
   } catch { return false; }
 }
@@ -351,9 +387,8 @@ async function deleteFromSheet(datetime, name) {
   if (!apiUrl) return false;
   const params = new URLSearchParams({ sheet: 'exercise', action: 'delete', datetime, name });
   try {
-    const res = await fetch(`${apiUrl}?${params}`, { method: 'GET' });
-    const data = await res.json();
-    return data.ok === true;
+    const data = await jsonpFetch(`${apiUrl}?${params}`);
+    return data.ok !== false;
   } catch { return false; }
 }
 
@@ -362,7 +397,11 @@ function showSyncBar(msg, type = '') {
   const bar = document.getElementById('sync-bar');
   bar.textContent = msg;
   bar.className = 'show' + (type ? ' ' + type : '');
-  if (type === 'synced') setTimeout(() => { bar.className = ''; }, 3000);
+  if (type === 'synced') setTimeout(hideSyncBar, 3000);
+}
+
+function hideSyncBar() {
+  document.getElementById('sync-bar').className = '';
 }
 
 // ── 저장 ──
@@ -391,23 +430,20 @@ async function saveRecord() {
     : null;
   const notes = document.getElementById('notes').value.trim();
 
+  const apiUrl = localStorage.getItem(API_URL_KEY);
+  if (!apiUrl) { showSyncBar('⚠️ 설정에서 Apps Script URL을 먼저 입력하세요'); return; }
+
   const record = {
     datetime: currentDatetime,
     exercise_type: currentType,
-    name,
-    duration,
-    sets,
-    distance_km,
-    notes,
-    synced: false
+    name, duration, sets, distance_km, notes
   };
 
-  // 1. 로컬 저장
-  const records = getRecords();
-  records.unshift(record);
-  saveRecords(records);
+  showSyncBar('☁️ 저장 중...');
+  const ok = await syncToSheet(record);
+  if (!ok) { showSyncBar('❌ 저장 실패 — 인터넷 연결을 확인하세요', 'error'); return; }
 
-  // 2. 폼 초기화
+  // 폼 초기화
   if (currentType === 'isometric') {
     document.getElementById('iso-duration').value = '';
     document.getElementById('iso-sets').value = '';
@@ -417,42 +453,23 @@ async function saveRecord() {
   }
   document.getElementById('notes').value = '';
   setNow();
-  renderRecords();
   showToast('저장되었습니다');
-
-  // 3. Google Sheets 동기화
-  const apiUrl = localStorage.getItem(API_URL_KEY);
-  if (!apiUrl) { showSyncBar('⚠️ Apps Script URL 미설정 — 설정에서 입력하세요'); return; }
-
-  showSyncBar('☁️ 동기화 중...');
-  const ok = await syncToSheet(record);
-  if (ok) {
-    records[0].synced = true;
-    saveRecords(records);
-    renderRecords();
-    showSyncBar('✓ 동기화 완료', 'synced');
-  } else {
-    const pending = getPending();
-    pending.push(record);
-    savePending(pending);
-    showSyncBar('⚠️ 동기화 실패 — 나중에 재시도됩니다', 'error');
-  }
+  await fetchFromSheets();
 }
 
 // ── 삭제 ──
 async function deleteRecord(datetime, name) {
   if (!confirm('이 기록을 삭제할까요?')) return;
-  const records = getRecords().filter(r => !(r.datetime === datetime && r.name === name));
-  saveRecords(records);
-  renderRecords();
+  showSyncBar('🗑 삭제 중...');
+  const ok = await deleteFromSheet(datetime, name);
+  if (!ok) { showSyncBar('❌ 삭제 실패 — 인터넷 연결을 확인하세요', 'error'); return; }
   showToast('삭제되었습니다');
-  const apiUrl = localStorage.getItem(API_URL_KEY);
-  if (apiUrl) deleteFromSheet(datetime, name);
+  await fetchFromSheets();
 }
 
 // ── 렌더링 ──
 function renderRecords() {
-  const records = getRecords().slice(0, 15);
+  const records = allRecords.slice(0, 15);
   const container = document.getElementById('records-list');
 
   if (records.length === 0) {
@@ -482,7 +499,6 @@ function renderRecords() {
     }
     if (r.notes) detailParts.push(r.notes);
 
-    const syncIcon = r.synced ? '☁️' : '⏳';
     const safeName = r.name.replace(/'/g, "\\'");
 
     return `
@@ -494,7 +510,7 @@ function renderRecords() {
         </div>
         <div class="record-right">
           <div class="record-badge" style="background:${badgeBg}; color:${badgeColor}">${badgeLabel}</div>
-          <div class="record-detail">${detailParts.join(' · ')} ${syncIcon}</div>
+          <div class="record-detail">${detailParts.join(' · ')}</div>
         </div>
         <button class="delete-btn" onclick="deleteRecord('${r.datetime}', '${safeName}')" title="삭제">✕</button>
       </div>`;
@@ -512,8 +528,8 @@ function showToast(msg) {
 // ── 초기화 ──
 function init() {
   setNow();
-  renderRecords();
   initSelectListeners();
+  fetchFromSheets();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
