@@ -491,6 +491,30 @@
     <div style="font-size:0.78rem; color:var(--gray-400); margin-top:8px;">
       사이트 데이터 삭제 후 구글 시트의 기록을 복원할 때 사용하세요.
     </div>
+
+    <!-- 수동 JSON 붙여넣기 복원 -->
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--gray-200);">
+      <div style="font-size:0.8rem; font-weight:600; color:var(--gray-600); margin-bottom:6px;">
+        자동 복원 실패 시 — 직접 붙여넣기
+      </div>
+      <div style="font-size:0.75rem; color:var(--gray-400); margin-bottom:8px; line-height:1.5;">
+        아래 URL을 브라우저 새 탭에서 열고, 화면에 표시된 JSON 전체를 복사하여 붙여넣으세요.
+      </div>
+      <div id="restore-url-display"
+           style="font-size:0.7rem; background:var(--gray-100); padding:8px 10px;
+                  border-radius:8px; word-break:break-all; margin-bottom:10px;
+                  color:var(--gray-600); font-family:monospace; line-height:1.4;">
+        (URL 저장 후 표시됩니다)
+      </div>
+      <textarea id="restore-json-input"
+        style="width:100%; height:90px; font-size:0.72rem; border:1px solid var(--gray-200);
+               border-radius:8px; padding:8px; font-family:monospace; resize:vertical;"
+        placeholder='{"ok":true,"data":[...]} 형태의 JSON을 여기에 붙여넣으세요'></textarea>
+      <button class="settings-save-btn" onclick="restoreFromJson()"
+              style="margin-top:8px; background:#1d4ed8;">
+        붙여넣기로 혈압 복원
+      </button>
+    </div>
   </div>
 </div>
 
@@ -822,10 +846,37 @@ async function restoreFromSheets() {
   showToast(`혈압 ${added.length}건 복원됨 (기존 ${existing.length}건 유지)`);
 }
 
+// ── JSON 붙여넣기 복원 ──
+function restoreFromJson() {
+  const text = document.getElementById('restore-json-input').value.trim();
+  if (!text) { showToast('JSON을 붙여넣어 주세요'); return; }
+  let json;
+  try { json = JSON.parse(text); }
+  catch { alert('JSON 형식 오류\n\n올바른 JSON인지 확인하세요.\n\n(앱스크립트 URL을 브라우저에서 열면 JSON이 표시됩니다)'); return; }
+
+  const data = json.data || (Array.isArray(json) ? json : null);
+  if (!data) { alert('데이터를 찾을 수 없습니다.\n\n{"ok":true,"data":[...]} 또는 배열 형태여야 합니다.'); return; }
+  if (data.length === 0) { showToast('복원할 데이터가 없습니다'); return; }
+
+  const existing = getRecords();
+  const existSet = new Set(existing.map(r => r.datetime));
+  const added = data.filter(r => r.datetime && !existSet.has(r.datetime))
+                    .map(r => ({ ...r, synced: true }));
+  saveRecords([...existing, ...added]
+    .sort((a, b) => new Date(b.datetime) - new Date(a.datetime)));
+  renderRecords();
+  closeSettings();
+  showToast(`혈압 ${added.length}건 복원됨 (기존 ${existing.length}건 유지)`);
+}
+
 // ── 설정 ──
 function openSettings() {
   const current = localStorage.getItem(API_URL_KEY) || '';
   document.getElementById('api-url-input').value = current;
+  const urlDisplay = document.getElementById('restore-url-display');
+  urlDisplay.textContent = current
+    ? current + '?sheet=bp&action=read'
+    : '(URL 저장 후 표시됩니다)';
   document.getElementById('settings-screen').style.display = 'block';
 }
 
@@ -840,6 +891,8 @@ function saveSettings() {
     return;
   }
   localStorage.setItem(API_URL_KEY, url);
+  const urlDisplay = document.getElementById('restore-url-display');
+  if (urlDisplay) urlDisplay.textContent = url ? url + '?sheet=bp&action=read' : '(URL 저장 후 표시됩니다)';
   closeSettings();
   showToast('설정이 저장되었습니다');
 

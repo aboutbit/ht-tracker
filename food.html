@@ -176,12 +176,53 @@
 
 <header>
   <h1>🥗 식사 기록</h1>
-  <button onclick="restoreFromSheets()"
+  <button onclick="openRestoreDialog()"
           style="background:rgba(255,255,255,0.2); border:none; color:white;
                  font-size:0.72rem; padding:5px 9px; border-radius:8px; cursor:pointer;">
     시트복원
   </button>
 </header>
+
+<!-- 복원 다이얼로그 -->
+<div id="restore-dialog"
+     style="display:none; position:fixed; inset:0; z-index:400; background:rgba(0,0,0,0.5);"
+     onclick="if(event.target===this)closeRestoreDialog()">
+  <div style="position:absolute; bottom:0; left:0; right:0; max-width:480px; margin:0 auto;
+              background:white; border-radius:20px 20px 0 0; padding:24px 20px 32px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <strong style="font-size:1rem;">식사 데이터 복원</strong>
+      <button onclick="closeRestoreDialog()"
+              style="background:none; border:none; font-size:1.3rem; cursor:pointer; color:#94a3b8;">✕</button>
+    </div>
+
+    <div style="font-size:0.78rem; color:#475569; margin-bottom:10px; line-height:1.6;">
+      자동 복원이 실패할 경우:<br>
+      아래 URL을 브라우저 새 탭에서 열고, 표시된 JSON 전체를 복사하여 붙여넣으세요.
+    </div>
+    <div id="food-restore-url"
+         style="font-size:0.68rem; background:#f1f5f9; padding:8px 10px; border-radius:8px;
+                word-break:break-all; margin-bottom:12px; color:#475569; font-family:monospace;
+                line-height:1.4;">
+      (혈압 앱 설정에서 URL 저장 후 표시됩니다)
+    </div>
+    <button onclick="restoreFromSheets()"
+            style="width:100%; padding:10px; background:#065f46; color:white; border:none;
+                   border-radius:10px; font-size:0.85rem; font-weight:600; cursor:pointer;
+                   margin-bottom:12px;">
+      자동 복원 시도
+    </button>
+    <textarea id="food-restore-json"
+      style="width:100%; height:90px; font-size:0.72rem; border:1px solid #e2e8f0;
+             border-radius:8px; padding:8px; font-family:monospace; resize:vertical;"
+      placeholder='{"ok":true,"data":[...]} 형태의 JSON을 여기에 붙여넣으세요'></textarea>
+    <button onclick="restoreFromJson()"
+            style="width:100%; padding:10px; background:#1d4ed8; color:white; border:none;
+                   border-radius:10px; font-size:0.85rem; font-weight:600; cursor:pointer;
+                   margin-top:8px;">
+      붙여넣기로 복원
+    </button>
+  </div>
+</div>
 
 <!-- 날짜 네비게이션 -->
 <div class="date-nav">
@@ -781,6 +822,41 @@ async function restoreFromSheets() {
                            .map(r => ({ ...r, synced: true }));
   saveRecords([...existing, ...added]);
   renderPage();
+  showToast(`식사 ${added.length}건 복원됨 (기존 ${existing.length}건 유지)`);
+}
+
+// ── 복원 다이얼로그 ──
+function openRestoreDialog() {
+  const url = localStorage.getItem(API_KEY) || '';
+  const el = document.getElementById('food-restore-url');
+  el.textContent = url
+    ? url + '?sheet=food&action=read'
+    : '(혈압 앱 설정에서 URL 저장 후 표시됩니다)';
+  document.getElementById('restore-dialog').style.display = 'block';
+}
+
+function closeRestoreDialog() {
+  document.getElementById('restore-dialog').style.display = 'none';
+}
+
+function restoreFromJson() {
+  const text = document.getElementById('food-restore-json').value.trim();
+  if (!text) { showToast('JSON을 붙여넣어 주세요'); return; }
+  let json;
+  try { json = JSON.parse(text); }
+  catch { alert('JSON 형식 오류\n\n올바른 JSON인지 확인하세요.'); return; }
+
+  const data = json.data || (Array.isArray(json) ? json : null);
+  if (!data) { alert('데이터를 찾을 수 없습니다.\n\n{"ok":true,"data":[...]} 또는 배열 형태여야 합니다.'); return; }
+  if (data.length === 0) { showToast('복원할 데이터가 없습니다'); return; }
+
+  const existing = getRecords();
+  const existSet = new Set(existing.map(r => r.datetime + r.food_name));
+  const added = data.filter(r => r.datetime && r.food_name && !existSet.has(r.datetime + r.food_name))
+                    .map(r => ({ ...r, synced: true }));
+  saveRecords([...existing, ...added]);
+  renderPage();
+  closeRestoreDialog();
   showToast(`식사 ${added.length}건 복원됨 (기존 ${existing.length}건 유지)`);
 }
 
