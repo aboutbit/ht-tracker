@@ -307,7 +307,8 @@ function medDelete(p) {
     const sh = getMedSheet();
     const rows = sh.getDataRange().getValues();
     for (let i = 1; i < rows.length; i++) {
-      if (toISO(rows[i][0]) === p.datetime && rows[i][1] === p.med_id) {
+      // datetime만으로 매칭 — 스키마 버전 무관하게 항상 작동
+      if (toISO(rows[i][0]) === p.datetime) {
         sh.deleteRow(i + 1); return ok({});
       }
     }
