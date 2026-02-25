@@ -222,7 +222,7 @@
       <div class="card-title">일 평균 섭취</div>
       <div class="stat-grid">
         <div class="stat-box">
-          <div class="stat-label">나트륨</div>
+          <div class="stat-label" id="avg-na-label">나트륨</div>
           <div class="stat-val" id="avg-na" style="color:var(--red)">—</div>
           <div class="stat-sub">mg / 2,000mg 권장</div>
         </div>
@@ -619,27 +619,37 @@ function renderFood() {
   const days = {};
   filtered.forEach(r => {
     const key = r.datetime.slice(0, 10);
-    if (!days[key]) days[key] = { na: 0, cal: 0, sugar: 0, fat: 0, carbs: 0, protein: 0 };
-    days[key].na     += r.sodium    || 0;
-    days[key].cal    += r.calories  || 0;
-    days[key].sugar  += r.sugar     || 0;
-    days[key].fat    += r.fat       || 0;
-    days[key].carbs  += r.carbs     || 0;
-    days[key].protein += r.protein  || 0;
+    if (!days[key]) days[key] = { na: 0, cal: 0, sugar: 0, fat: 0, carbs: 0, protein: 0, potassium: 0 };
+    days[key].na        += r.sodium    || 0;
+    days[key].cal       += r.calories  || 0;
+    days[key].sugar     += r.sugar     || 0;
+    days[key].fat       += r.fat       || 0;
+    days[key].carbs     += r.carbs     || 0;
+    days[key].protein   += r.protein   || 0;
+    days[key].potassium += r.potassium || 0;
+  });
+
+  // 칼륨 상쇄 적용: 순 나트륨 = 실제 나트륨 - (칼륨 × 0.59)
+  Object.values(days).forEach(v => {
+    const kOffset = Math.round(v.potassium * 0.59);
+    v.netNa = Math.max(0, Math.round(v.na) - kOffset);
+    v.hasK  = v.potassium > 0;
   });
 
   const dayList = Object.entries(days).sort(([a],[b]) => a.localeCompare(b));
   const n = dayList.length;
 
-  // 평균
-  document.getElementById('avg-na').textContent    = Math.round(sum(dayList.map(([,v])=>v.na))   / n).toLocaleString() + 'mg';
+  // 평균 (칼륨이 하나라도 있으면 순 나트륨으로 표시)
+  const anyK = dayList.some(([,v]) => v.hasK);
+  document.getElementById('avg-na-label').textContent = anyK ? '순 나트륨' : '나트륨';
+  document.getElementById('avg-na').textContent    = Math.round(sum(dayList.map(([,v])=> anyK ? v.netNa : Math.round(v.na))) / n).toLocaleString() + 'mg';
   document.getElementById('avg-cal').textContent   = Math.round(sum(dayList.map(([,v])=>v.cal))  / n).toLocaleString();
   document.getElementById('avg-sugar').textContent = Math.round(sum(dayList.map(([,v])=>v.sugar))/ n) + 'g';
   document.getElementById('avg-fat').textContent   = Math.round(sum(dayList.map(([,v])=>v.fat))  / n) + 'g';
 
-  // 나트륨 라인 차트
+  // 나트륨 라인 차트 (칼륨 상쇄 적용)
   const dLabels = dayList.map(([k]) => k.slice(5)); // MM-DD
-  const naVals  = dayList.map(([,v]) => Math.round(v.na));
+  const naVals  = dayList.map(([,v]) => anyK ? v.netNa : Math.round(v.na));
   const calVals = dayList.map(([,v]) => Math.round(v.cal));
 
   if (naChart) naChart.destroy();
@@ -685,20 +695,22 @@ function renderFood() {
     }
   });
 
-  // 최근 7일 나트륨 바
+  // 최근 7일 나트륨 바 (칼륨 상쇄 적용)
   const recent7 = dayList.slice(-7);
-  const maxNa   = Math.max(...recent7.map(([,v]) => v.na), 2000);
+  const maxNa   = Math.max(...recent7.map(([,v]) => anyK ? v.netNa : v.na), 2000);
   document.getElementById('na-bars').innerHTML = recent7.map(([k, v]) => {
-    const pct = Math.min((v.na / maxNa) * 100, 100);
-    const color = v.na >= 2000 ? '#dc2626' : v.na >= 1500 ? '#f97316' : '#3b82f6';
+    const displayNa = anyK ? v.netNa : Math.round(v.na);
+    const pct   = Math.min((displayNa / maxNa) * 100, 100);
+    const color = displayNa >= 2000 ? '#dc2626' : displayNa >= 1500 ? '#f97316' : '#3b82f6';
     const label = k.slice(5); // MM-DD
+    const kTag  = v.hasK ? ` <span style="font-size:0.68rem;color:#059669">🍌-${Math.round(v.potassium*0.59)}mg</span>` : '';
     return `
       <div class="na-bar-row">
         <div class="na-bar-label">${label}</div>
         <div class="na-bar-track">
           <div class="na-bar-fill" style="width:${pct}%; background:${color}"></div>
         </div>
-        <div class="na-bar-val" style="color:${color}">${Math.round(v.na).toLocaleString()}mg</div>
+        <div class="na-bar-val" style="color:${color}">${displayNa.toLocaleString()}mg${kTag}</div>
       </div>`;
   }).join('');
 
