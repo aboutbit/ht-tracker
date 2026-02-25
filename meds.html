@@ -416,7 +416,7 @@ function renderPage() {
   document.getElementById('date-display').textContent = displayDate(currentDate);
   const todayRecs = getTodayRecords();
   const total  = medDefs.length;
-  const taken  = todayRecs.length;
+  const taken  = todayRecs.filter(r => medDefs.some(m => m.id === r.med_id)).length;
   const pct    = total ? Math.round((taken / total) * 100) : 0;
 
   document.getElementById('taken-count').textContent = taken;
