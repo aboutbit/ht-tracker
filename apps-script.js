@@ -264,11 +264,11 @@ function getMedSheet() {
   let sh = ss.getSheetByName(MED_SHEET);
   if (!sh) {
     sh = ss.insertSheet(MED_SHEET);
-    sh.appendRow(['datetime', 'med_name', 'notes']);
-    styleHeader(sh, 3, '#0f766e');
+    sh.appendRow(['datetime', 'med_id', 'med_name', 'notes']);
+    styleHeader(sh, 4, '#0f766e');
     sh.setFrozenRows(1);
     sh.setColumnWidth(1, 180);
-    sh.setColumnWidth(2, 180);
+    sh.setColumnWidth(3, 180);
   }
   return sh;
 }
@@ -280,8 +280,9 @@ function medRead() {
     const rows = sh.getDataRange().getValues();
     const data = rows.slice(1).filter(r => r[0]).map(r => ({
       datetime: toISO(r[0]),
-      med_name: r[1] || '',
-      notes:    r[2] || ''
+      med_id:   r[1] || '',
+      med_name: r[2] || '',
+      notes:    r[3] || ''
     })).sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
     return ok({ data });
   } catch(e) { return err(e.message); }
@@ -293,8 +294,9 @@ function medWrite(p) {
     const sh = getMedSheet();
     sh.appendRow([
       p.datetime || new Date().toISOString(),
-      p.med_name,
-      p.notes || ''
+      p.med_id   || '',
+      p.med_name || '',
+      p.notes    || ''
     ]);
     return ok({});
   } catch(e) { return err(e.message); }
@@ -305,7 +307,7 @@ function medDelete(p) {
     const sh = getMedSheet();
     const rows = sh.getDataRange().getValues();
     for (let i = 1; i < rows.length; i++) {
-      if (toISO(rows[i][0]) === p.datetime && rows[i][1] === p.med_name) {
+      if (toISO(rows[i][0]) === p.datetime && rows[i][1] === p.med_id) {
         sh.deleteRow(i + 1); return ok({});
       }
     }

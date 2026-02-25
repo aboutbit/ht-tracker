@@ -156,7 +156,7 @@
     .field-group input { width: 100%; border: 2px solid var(--gray-200); border-radius: 10px;
                          padding: 11px 14px; font-size: 0.95rem; outline: none; color: var(--gray-800); }
     .field-group input:focus { border-color: var(--teal-l); }
-    .timing-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .timing-opts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
     .timing-opt { border: 2px solid var(--gray-200); border-radius: 10px; padding: 9px 4px;
                   text-align: center; font-size: 0.82rem; cursor: pointer; background: white; }
     .timing-opt.selected { border-color: var(--teal-l); background: var(--teal-bg);
@@ -244,6 +244,8 @@
           <label>복용 시간</label>
           <div class="timing-opts">
             <button class="timing-opt selected" data-val="아침" onclick="selectTiming(this)">🌅 아침</button>
+            <button class="timing-opt" data-val="점심" onclick="selectTiming(this)">☀️ 점심</button>
+            <button class="timing-opt" data-val="오후" onclick="selectTiming(this)">🌤 오후</button>
             <button class="timing-opt" data-val="저녁" onclick="selectTiming(this)">🌙 저녁</button>
             <button class="timing-opt" data-val="언제든" onclick="selectTiming(this)">🕐 언제든</button>
           </div>
@@ -265,12 +267,14 @@ const MEDS_LIST   = 'meds_list';
 const MEDS_RECS   = 'meds_records';
 
 const DEFAULT_MEDS = [
-  { id: 'beet',    name: '비트즙',      timing: '아침', icon: '🥤' },
-  { id: 'omega3',  name: '오메가3',     timing: '아침', icon: '🐟' },
-  { id: 'calMag',  name: '칼슘/마그네슘', timing: '저녁', icon: '💊' },
+  { id: 'beet-am',   name: '비트즙',       timing: '아침', icon: '🥤' },  // 아침 공복
+  { id: 'calMag-ln', name: '칼슘/마그네슘', timing: '점심', icon: '💊' },  // 점심 식후
+  { id: 'beet-pm',   name: '비트즙',       timing: '오후', icon: '🥤' },  // 오후 공복
+  { id: 'omega3-ev', name: '오메가3',      timing: '저녁', icon: '🐟' },  // 저녁 식후
+  { id: 'calMag-ev', name: '칼슘/마그네슘', timing: '저녁', icon: '💊' },  // 저녁 식후
 ];
 
-const TIMING_LABEL = { '아침': '🌅 아침', '저녁': '🌙 저녁', '언제든': '🕐 언제든' };
+const TIMING_LABEL = { '아침': '🌅 아침', '점심': '☀️ 점심', '오후': '🌤 오후', '저녁': '🌙 저녁', '언제든': '🕐 언제든' };
 
 let currentDate  = new Date();
 let allRecords   = [];  // taken records
@@ -360,42 +364,45 @@ async function writeMedRecord(record) {
   } catch { return false; }
 }
 
-async function deleteMedRecord(datetime, med_name) {
+async function deleteMedRecord(datetime, med_id) {
   const url = localStorage.getItem(API_KEY);
   if (!url) return false;
-  const p = new URLSearchParams({ sheet: 'meds', action: 'delete', datetime, med_name });
+  const p = new URLSearchParams({ sheet: 'meds', action: 'delete', datetime, med_id });
   try {
     const d = await jsonpFetch(`${url}?${p}`);
     return d.ok !== false;
   } catch { return false; }
 }
 
-// ── 토글 ──
-async function toggleMed(medName) {
-  const key    = dateKey(currentDate);
-  const taken  = allRecords.find(r => r.datetime.startsWith(key) && r.med_name === medName);
+// ── 토글 (med_id 기반 — 같은 이름이 여러 시간대에 있어도 구분) ──
+async function toggleMed(medId) {
+  const med  = medDefs.find(m => m.id === medId);
+  if (!med) return;
+  const key   = dateKey(currentDate);
+  const taken = allRecords.find(r => r.datetime.startsWith(key) && r.med_id === medId);
 
   if (taken) {
     // 복용 취소
-    allRecords = allRecords.filter(r => !(r.datetime.startsWith(key) && r.med_name === medName));
+    allRecords = allRecords.filter(r => !(r.datetime.startsWith(key) && r.med_id === medId));
     localStorage.setItem(MEDS_RECS, JSON.stringify(allRecords));
     renderPage();
-    showToast(`${medName} 복용 취소`);
+    showToast(`${med.name} 복용 취소`);
     showSyncBar('🗑 시트에서 삭제 중...');
-    const ok = await deleteMedRecord(taken.datetime, medName);
+    const ok = await deleteMedRecord(taken.datetime, medId);
     ok ? hideSyncBar() : showSyncBar('⚠️ 시트 삭제 실패', 'error');
     if (!ok) setTimeout(hideSyncBar, 3000);
   } else {
     // 복용 완료
     const record = {
       datetime: key + 'T' + new Date().toTimeString().slice(0, 8),
-      med_name: medName,
+      med_id:   medId,
+      med_name: med.name,
       notes:    ''
     };
     allRecords = [record, ...allRecords];
     localStorage.setItem(MEDS_RECS, JSON.stringify(allRecords));
     renderPage();
-    showToast(`✅ ${medName} 복용 완료`);
+    showToast(`✅ ${med.name} 복용 완료`);
     showSyncBar('☁️ 시트 동기화 중...');
     const ok = await writeMedRecord(record);
     ok ? showSyncBar('✅ 동기화 완료', 'synced')
@@ -429,20 +436,20 @@ function renderPage() {
     return;
   }
 
-  const groups = ['아침', '저녁', '언제든'];
+  const groups = ['아침', '점심', '오후', '저녁', '언제든'];
   container.innerHTML = groups.map(timing => {
     const items = medDefs.filter(m => m.timing === timing);
     if (items.length === 0) return '';
     return `
       <div class="section-header">${TIMING_LABEL[timing]}</div>
       ${items.map(m => {
-        const rec    = todayRecs.find(r => r.med_name === m.name);
+        const rec     = todayRecs.find(r => r.med_id === m.id);
         const isTaken = !!rec;
         const timeStr = isTaken
           ? '복용 완료 · ' + rec.datetime.slice(11, 16)
           : '아직 복용 전';
         return `
-          <div class="med-card${isTaken ? ' taken' : ''}" onclick="toggleMed('${m.name.replace(/'/g,"\\'")}')">
+          <div class="med-card${isTaken ? ' taken' : ''}" onclick="toggleMed('${m.id}')">
             <div class="med-check">${isTaken ? '✓' : ''}</div>
             <div class="med-icon">${m.icon}</div>
             <div class="med-info">
@@ -567,10 +574,18 @@ function showToast(msg) {
 
 // ── 초기화 ──
 document.addEventListener('DOMContentLoaded', () => {
-  // 약 정의 로드
+  // 약 정의 로드 (구버전 기본값이면 새 스케줄로 자동 마이그레이션)
   const saved = localStorage.getItem(MEDS_LIST);
-  medDefs = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_MEDS));
-  if (!saved) localStorage.setItem(MEDS_LIST, JSON.stringify(medDefs));
+  const parsed = saved ? JSON.parse(saved) : null;
+  const OLD_IDS = ['beet', 'omega3', 'calMag'];
+  const isOldDefault = parsed && parsed.length <= 3 && parsed.every(m => OLD_IDS.includes(m.id));
+  if (!parsed || isOldDefault) {
+    medDefs = JSON.parse(JSON.stringify(DEFAULT_MEDS));
+    localStorage.setItem(MEDS_LIST, JSON.stringify(medDefs));
+    localStorage.removeItem(MEDS_RECS); // 구버전 기록도 초기화
+  } else {
+    medDefs = parsed;
+  }
 
   // 기록 로드
   allRecords = JSON.parse(localStorage.getItem(MEDS_RECS) || '[]');
