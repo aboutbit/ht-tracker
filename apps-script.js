@@ -13,6 +13,7 @@
 const BP_SHEET       = 'BloodPressure';
 const FOOD_SHEET     = 'FoodLog';
 const EXERCISE_SHEET = 'ExerciseLog';
+const MED_SHEET      = 'MedLog';
 
 let _cb = null; // JSONP 콜백 이름
 
@@ -27,6 +28,8 @@ function doGet(e) {
     return handleFood(action, e.parameter);
   } else if (sheetType === 'exercise') {
     return handleExercise(action, e.parameter);
+  } else if (sheetType === 'meds') {
+    return handleMeds(action, e.parameter);
   } else {
     return handleBP(action, e.parameter);
   }
@@ -240,6 +243,69 @@ function exerciseDelete(p) {
     const rows = sh.getDataRange().getValues();
     for (let i = 1; i < rows.length; i++) {
       if (toISO(rows[i][0]) === p.datetime && rows[i][2] === p.name) {
+        sh.deleteRow(i + 1); return ok({});
+      }
+    }
+    return err('기록 없음');
+  } catch(e) { return err(e.message); }
+}
+
+// ════════════════════════════════════════
+// 약/영양제 기록 (MedLog)
+// ════════════════════════════════════════
+function handleMeds(action, p) {
+  if (action === 'write')  return medWrite(p);
+  if (action === 'delete') return medDelete(p);
+  return medRead();
+}
+
+function getMedSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(MED_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(MED_SHEET);
+    sh.appendRow(['datetime', 'med_name', 'notes']);
+    styleHeader(sh, 3, '#0f766e');
+    sh.setFrozenRows(1);
+    sh.setColumnWidth(1, 180);
+    sh.setColumnWidth(2, 180);
+  }
+  return sh;
+}
+
+function medRead() {
+  try {
+    const sh = getMedSheet();
+    if (sh.getLastRow() < 2) return ok({ data: [] });
+    const rows = sh.getDataRange().getValues();
+    const data = rows.slice(1).filter(r => r[0]).map(r => ({
+      datetime: toISO(r[0]),
+      med_name: r[1] || '',
+      notes:    r[2] || ''
+    })).sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+    return ok({ data });
+  } catch(e) { return err(e.message); }
+}
+
+function medWrite(p) {
+  try {
+    if (!p.med_name) return err('약 이름 필요');
+    const sh = getMedSheet();
+    sh.appendRow([
+      p.datetime || new Date().toISOString(),
+      p.med_name,
+      p.notes || ''
+    ]);
+    return ok({});
+  } catch(e) { return err(e.message); }
+}
+
+function medDelete(p) {
+  try {
+    const sh = getMedSheet();
+    const rows = sh.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (toISO(rows[i][0]) === p.datetime && rows[i][1] === p.med_name) {
         sh.deleteRow(i + 1); return ok({});
       }
     }

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>약/영양제 기록</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --teal:    #0f766e;
+      --teal-l:  #14b8a6;
+      --teal-bg: #ccfbf1;
+      --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
+      --gray-400: #94a3b8; --gray-600: #475569; --gray-800: #1e293b;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: var(--gray-50); color: var(--gray-800);
+           min-height: 100vh; max-width: 480px; margin: 0 auto; }
+
+    /* ── 헤더 ── */
+    header { background: var(--teal); color: white; padding: 16px 20px;
+             position: sticky; top: 0; z-index: 100;
+             display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+    .icon-btn { background: rgba(255,255,255,0.15); border: none; color: white;
+                width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+                font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+    .icon-btn:active { background: rgba(255,255,255,0.3); }
+
+    /* ── 동기화 상태 바 ── */
+    #sync-bar { background: #fef3c7; color: #92400e; font-size: 0.78rem;
+                padding: 6px 20px; display: none; align-items: center; gap: 6px; }
+    #sync-bar.show { display: flex; }
+    #sync-bar.synced { background: #d1fae5; color: #065f46; }
+    #sync-bar.error  { background: #fee2e2; color: #991b1b; }
+
+    /* ── 날짜 탐색 ── */
+    .date-nav { display: flex; align-items: center; justify-content: center;
+                gap: 16px; padding: 12px 20px; background: white;
+                border-bottom: 1px solid var(--gray-200); }
+    .date-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer;
+                color: var(--gray-600); padding: 4px 8px; border-radius: 6px; }
+    .date-btn:active { background: var(--gray-100); }
+    #date-display { font-size: 0.95rem; font-weight: 600; color: var(--gray-800); }
+
+    /* ── 진행 요약 카드 ── */
+    .summary-card { margin: 14px 16px; background: white; border-radius: 16px;
+                    padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .summary-row { display: flex; justify-content: space-between; align-items: flex-end;
+                   margin-bottom: 8px; }
+    .summary-title { font-size: 0.78rem; font-weight: 600; color: var(--gray-400);
+                     text-transform: uppercase; letter-spacing: 0.05em; }
+    .summary-count { font-size: 1.5rem; font-weight: 700; color: var(--teal); }
+    .summary-total { font-size: 0.85rem; color: var(--gray-400); }
+    .progress-bar { height: 10px; background: var(--gray-100); border-radius: 5px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 5px; background: var(--teal-l);
+                     transition: width 0.4s; }
+    .progress-fill.done { background: #10b981; }
+
+    /* ── 섹션 타이틀 ── */
+    .section-header { padding: 10px 16px 6px;
+                      font-size: 0.78rem; font-weight: 600; color: var(--gray-400);
+                      text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── 약 카드 ── */
+    .med-card { margin: 0 16px 10px; background: white; border-radius: 16px;
+                padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+                display: flex; align-items: center; gap: 14px;
+                cursor: pointer; transition: background 0.15s; user-select: none;
+                -webkit-tap-highlight-color: transparent; }
+    .med-card:active { background: var(--gray-50); }
+    .med-card.taken { background: var(--teal-bg); }
+    .med-check { width: 28px; height: 28px; border-radius: 50%; border: 2.5px solid var(--gray-200);
+                 display: flex; align-items: center; justify-content: center;
+                 flex-shrink: 0; font-size: 1rem; transition: all 0.15s; }
+    .med-card.taken .med-check { background: var(--teal); border-color: var(--teal); color: white; }
+    .med-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .med-info { flex: 1; min-width: 0; }
+    .med-name { font-size: 0.95rem; font-weight: 600; color: var(--gray-800); }
+    .med-sub  { font-size: 0.75rem; color: var(--gray-400); margin-top: 2px; }
+    .med-card.taken .med-name { color: var(--teal); }
+    .med-card.taken .med-sub  { color: #0d9488; }
+    .timing-badge { font-size: 0.7rem; font-weight: 600; padding: 3px 8px;
+                    border-radius: 10px; background: var(--gray-100); color: var(--gray-600);
+                    flex-shrink: 0; }
+    .med-card.taken .timing-badge { background: rgba(15,118,110,0.15); color: var(--teal); }
+
+    .empty-section { margin: 0 16px 14px; padding: 12px 16px;
+                     color: var(--gray-400); font-size: 0.82rem; }
+
+    /* ── 하단 네비 ── */
+    .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+                  width: 100%; max-width: 480px; background: white;
+                  border-top: 1px solid var(--gray-200); display: flex; }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center;
+               padding: 10px 4px; background: none; border: none; cursor: pointer;
+               color: var(--gray-400); font-size: 0.65rem; gap: 2px; text-decoration: none; }
+    .nav-btn.active { color: var(--teal); }
+    .nav-icon { font-size: 1.25rem; }
+    .bottom-pad { height: 70px; }
+
+    /* ── 토스트 ── */
+    #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+             background: var(--gray-800); color: white; padding: 10px 20px;
+             border-radius: 20px; font-size: 0.88rem; opacity: 0;
+             transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+             white-space: nowrap; z-index: 300; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── 설정 화면 ── */
+    #settings-screen { display: none; position: fixed; inset: 0; background: var(--gray-50);
+                       z-index: 200; overflow-y: auto; }
+    .settings-header { background: var(--teal); color: white; padding: 16px 20px;
+                       display: flex; align-items: center; gap: 12px; }
+    .settings-header h2 { font-size: 1.1rem; font-weight: 600; }
+    .settings-body { padding: 16px; }
+    .settings-section-title { font-size: 0.78rem; font-weight: 600; color: var(--gray-400);
+                               text-transform: uppercase; letter-spacing: 0.05em;
+                               margin-bottom: 10px; margin-top: 20px; }
+    .settings-section-title:first-child { margin-top: 0; }
+
+    /* 약 관리 리스트 */
+    .med-list-item { background: white; border-radius: 12px; padding: 14px 16px;
+                     margin-bottom: 8px; display: flex; align-items: center;
+                     box-shadow: 0 1px 3px rgba(0,0,0,0.06); gap: 12px; }
+    .med-list-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .med-list-info { flex: 1; min-width: 0; }
+    .med-list-name { font-size: 0.95rem; font-weight: 600; }
+    .med-list-timing { font-size: 0.75rem; color: var(--gray-400); margin-top: 2px; }
+    .med-list-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .med-list-edit { background: none; border: none; color: var(--gray-400);
+                     font-size: 0.85rem; cursor: pointer; padding: 6px 8px;
+                     border-radius: 6px; }
+    .med-list-edit:active { color: var(--teal); background: var(--teal-bg); }
+    .med-list-del  { background: none; border: none; color: var(--gray-400);
+                     font-size: 0.85rem; cursor: pointer; padding: 6px 8px;
+                     border-radius: 6px; }
+    .med-list-del:active { color: #dc2626; background: #fee2e2; }
+
+    /* 약 추가/수정 폼 */
+    .add-med-btn { width: 100%; background: none; border: 2px dashed var(--gray-200);
+                   border-radius: 12px; padding: 14px; font-size: 0.9rem;
+                   color: var(--teal); font-weight: 600; cursor: pointer;
+                   margin-top: 4px; }
+    .add-med-btn:active { background: var(--teal-bg); }
+    .form-card { background: white; border-radius: 16px; padding: 18px; margin-top: 16px;
+                 box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .form-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; color: var(--gray-800); }
+    .field-group { margin-bottom: 14px; }
+    .field-group label { font-size: 0.78rem; font-weight: 600; color: var(--gray-600);
+                         display: block; margin-bottom: 6px; }
+    .field-group input { width: 100%; border: 2px solid var(--gray-200); border-radius: 10px;
+                         padding: 11px 14px; font-size: 0.95rem; outline: none; color: var(--gray-800); }
+    .field-group input:focus { border-color: var(--teal-l); }
+    .timing-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .timing-opt { border: 2px solid var(--gray-200); border-radius: 10px; padding: 9px 4px;
+                  text-align: center; font-size: 0.82rem; cursor: pointer; background: white; }
+    .timing-opt.selected { border-color: var(--teal-l); background: var(--teal-bg);
+                           color: var(--teal); font-weight: 600; }
+    .form-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .form-save-btn { flex: 1; background: var(--teal); color: white; border: none;
+                     border-radius: 12px; padding: 13px; font-size: 0.92rem;
+                     font-weight: 600; cursor: pointer; }
+    .form-save-btn:active { background: #0d6e67; }
+    .form-cancel-btn { background: none; border: 2px solid var(--gray-200); color: var(--gray-600);
+                       border-radius: 12px; padding: 13px 18px; font-size: 0.92rem;
+                       font-weight: 600; cursor: pointer; }
+    .form-cancel-btn:active { background: var(--gray-100); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>💊 약/영양제</h1>
+  <button class="icon-btn" onclick="openSettings()">⚙️</button>
+</header>
+
+<div id="sync-bar"></div>
+
+<!-- 날짜 네비게이션 -->
+<div class="date-nav">
+  <button class="date-btn" onclick="changeDate(-1)">‹</button>
+  <span id="date-display"></span>
+  <button class="date-btn" onclick="changeDate(1)">›</button>
+</div>
+
+<!-- 진행 요약 -->
+<div class="summary-card">
+  <div class="summary-row">
+    <div>
+      <div class="summary-title">오늘 복용 현황</div>
+      <div>
+        <span class="summary-count" id="taken-count">0</span>
+        <span class="summary-total" id="total-count"> / 0개 완료</span>
+      </div>
+    </div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+</div>
+
+<!-- 약 목록 -->
+<div id="meds-container"></div>
+
+<div class="bottom-pad"></div>
+
+<!-- 하단 네비 -->
+<nav class="bottom-nav">
+  <a href="index.html" class="nav-btn"><span class="nav-icon">❤️</span><span>혈압</span></a>
+  <a href="food.html" class="nav-btn"><span class="nav-icon">🥗</span><span>식사</span></a>
+  <button class="nav-btn active"><span class="nav-icon">💊</span><span>약</span></button>
+  <a href="exercise.html" class="nav-btn"><span class="nav-icon">💪</span><span>운동</span></a>
+  <a href="dashboard.html" class="nav-btn"><span class="nav-icon">📊</span><span>대시보드</span></a>
+</nav>
+
+<!-- 설정 화면 -->
+<div id="settings-screen">
+  <div class="settings-header">
+    <button class="icon-btn" onclick="closeSettings()">←</button>
+    <h2>약/영양제 관리</h2>
+  </div>
+  <div class="settings-body">
+    <div class="settings-section-title">등록된 약/영양제</div>
+    <div id="med-list"></div>
+    <button class="add-med-btn" onclick="openForm(null)">+ 새 약/영양제 추가</button>
+
+    <div id="med-form" style="display:none;">
+      <div class="form-card">
+        <div class="form-title" id="form-title">새 약/영양제 추가</div>
+        <div class="field-group">
+          <label>아이콘 (이모지)</label>
+          <input type="text" id="f-icon" placeholder="💊" maxlength="2">
+        </div>
+        <div class="field-group">
+          <label>이름 *</label>
+          <input type="text" id="f-name" placeholder="예: 오메가3">
+        </div>
+        <div class="field-group">
+          <label>복용 시간</label>
+          <div class="timing-opts">
+            <button class="timing-opt selected" data-val="아침" onclick="selectTiming(this)">🌅 아침</button>
+            <button class="timing-opt" data-val="저녁" onclick="selectTiming(this)">🌙 저녁</button>
+            <button class="timing-opt" data-val="언제든" onclick="selectTiming(this)">🕐 언제든</button>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="form-cancel-btn" onclick="closeForm()">취소</button>
+          <button class="form-save-btn" onclick="saveMedDef()">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API_KEY     = 'bp_api_url';
+const MEDS_LIST   = 'meds_list';
+const MEDS_RECS   = 'meds_records';
+
+const DEFAULT_MEDS = [
+  { id: 'beet',    name: '비트즙',      timing: '아침', icon: '🥤' },
+  { id: 'omega3',  name: '오메가3',     timing: '아침', icon: '🐟' },
+  { id: 'calMag',  name: '칼슘/마그네슘', timing: '저녁', icon: '💊' },
+];
+
+const TIMING_LABEL = { '아침': '🌅 아침', '저녁': '🌙 저녁', '언제든': '🕐 언제든' };
+
+let currentDate  = new Date();
+let allRecords   = [];  // taken records
+let medDefs      = [];  // medication definitions
+let editingId    = null;
+let formTiming   = '아침';
+
+// ── 날짜 유틸 ──
+function dateKey(d) {
+  return d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
+}
+function displayDate(d) {
+  const today = dateKey(new Date());
+  const key   = dateKey(d);
+  const yd    = new Date(); yd.setDate(yd.getDate() - 1);
+  const label = key === today ? '오늘' : key === dateKey(yd) ? '어제' : '';
+  return d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })
+         + (label ? ` (${label})` : '');
+}
+function changeDate(dir) {
+  currentDate.setDate(currentDate.getDate() + dir);
+  renderPage();
+}
+function getTodayRecords() {
+  const key = dateKey(currentDate);
+  return allRecords.filter(r => r.datetime && r.datetime.startsWith(key));
+}
+
+// ── JSONP ──
+function jsonpFetch(url, timeout = 12000) {
+  return new Promise((resolve, reject) => {
+    const cbName = '_gscb_' + Date.now();
+    const timer  = setTimeout(() => {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('timeout'));
+    }, timeout);
+    window[cbName] = function(data) {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      resolve(data);
+    };
+    const script = document.createElement('script');
+    script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
+    script.onerror = function() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('script load error'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+// ── 동기화 ──
+async function syncFromSheets() {
+  const url = localStorage.getItem(API_KEY);
+  if (!url) return;
+  showSyncBar('⏳ 동기화 중...');
+  try {
+    const json = await jsonpFetch(`${url}?sheet=meds&action=read`);
+    if (json.ok) {
+      allRecords = json.data || [];
+      localStorage.setItem(MEDS_RECS, JSON.stringify(allRecords));
+      renderPage();
+      hideSyncBar();
+    } else {
+      showSyncBar('⚠️ 서버 오류: ' + json.error, 'error');
+      setTimeout(hideSyncBar, 3000);
+    }
+  } catch {
+    showSyncBar('⚠️ 오프라인 — 로컬 데이터 사용 중', 'error');
+    setTimeout(hideSyncBar, 3000);
+  }
+}
+
+async function writeMedRecord(record) {
+  const url = localStorage.getItem(API_KEY);
+  if (!url) return false;
+  const p = new URLSearchParams({ sheet: 'meds', action: 'write', ...record });
+  try {
+    const d = await jsonpFetch(`${url}?${p}`);
+    return d.ok;
+  } catch { return false; }
+}
+
+async function deleteMedRecord(datetime, med_name) {
+  const url = localStorage.getItem(API_KEY);
+  if (!url) return false;
+  const p = new URLSearchParams({ sheet: 'meds', action: 'delete', datetime, med_name });
+  try {
+    const d = await jsonpFetch(`${url}?${p}`);
+    return d.ok !== false;
+  } catch { return false; }
+}
+
+// ── 토글 ──
+async function toggleMed(medName) {
+  const key    = dateKey(currentDate);
+  const taken  = allRecords.find(r => r.datetime.startsWith(key) && r.med_name === medName);
+
+  if (taken) {
+    // 복용 취소
+    allRecords = allRecords.filter(r => !(r.datetime.startsWith(key) && r.med_name === medName));
+    localStorage.setItem(MEDS_RECS, JSON.stringify(allRecords));
+    renderPage();
+    showToast(`${medName} 복용 취소`);
+    showSyncBar('🗑 시트에서 삭제 중...');
+    const ok = await deleteMedRecord(taken.datetime, medName);
+    ok ? hideSyncBar() : showSyncBar('⚠️ 시트 삭제 실패', 'error');
+    if (!ok) setTimeout(hideSyncBar, 3000);
+  } else {
+    // 복용 완료
+    const record = {
+      datetime: key + 'T' + new Date().toTimeString().slice(0, 8),
+      med_name: medName,
+      notes:    ''
+    };
+    allRecords = [record, ...allRecords];
+    localStorage.setItem(MEDS_RECS, JSON.stringify(allRecords));
+    renderPage();
+    showToast(`✅ ${medName} 복용 완료`);
+    showSyncBar('☁️ 시트 동기화 중...');
+    const ok = await writeMedRecord(record);
+    ok ? showSyncBar('✅ 동기화 완료', 'synced')
+       : showSyncBar('⚠️ 시트 동기화 실패 — 로컬에는 저장됨', 'error');
+    if (!ok) setTimeout(hideSyncBar, 3000);
+  }
+}
+
+// ── 렌더링 ──
+function renderPage() {
+  document.getElementById('date-display').textContent = displayDate(currentDate);
+  const todayRecs = getTodayRecords();
+  const total  = medDefs.length;
+  const taken  = todayRecs.length;
+  const pct    = total ? Math.round((taken / total) * 100) : 0;
+
+  document.getElementById('taken-count').textContent = taken;
+  document.getElementById('total-count').textContent = ` / ${total}개 완료`;
+
+  const fill = document.getElementById('progress-fill');
+  fill.style.width = pct + '%';
+  fill.className = 'progress-fill' + (pct >= 100 ? ' done' : '');
+
+  const container = document.getElementById('meds-container');
+  if (total === 0) {
+    container.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--gray-400)">
+      <div style="font-size:2.5rem; margin-bottom:8px">💊</div>
+      <div>아직 약/영양제가 없습니다</div>
+      <div style="font-size:0.82rem; margin-top:6px">오른쪽 위 ⚙️에서 추가하세요</div>
+    </div>`;
+    return;
+  }
+
+  const groups = ['아침', '저녁', '언제든'];
+  container.innerHTML = groups.map(timing => {
+    const items = medDefs.filter(m => m.timing === timing);
+    if (items.length === 0) return '';
+    return `
+      <div class="section-header">${TIMING_LABEL[timing]}</div>
+      ${items.map(m => {
+        const rec    = todayRecs.find(r => r.med_name === m.name);
+        const isTaken = !!rec;
+        const timeStr = isTaken
+          ? '복용 완료 · ' + rec.datetime.slice(11, 16)
+          : '아직 복용 전';
+        return `
+          <div class="med-card${isTaken ? ' taken' : ''}" onclick="toggleMed('${m.name.replace(/'/g,"\\'")}')">
+            <div class="med-check">${isTaken ? '✓' : ''}</div>
+            <div class="med-icon">${m.icon}</div>
+            <div class="med-info">
+              <div class="med-name">${m.name}</div>
+              <div class="med-sub">${timeStr}</div>
+            </div>
+            <div class="timing-badge">${timing}</div>
+          </div>`;
+      }).join('')}`;
+  }).join('');
+}
+
+// ── 설정 화면 ──
+function openSettings() {
+  renderMedList();
+  document.getElementById('settings-screen').style.display = 'block';
+}
+function closeSettings() {
+  document.getElementById('settings-screen').style.display = 'none';
+  closeForm();
+}
+
+function renderMedList() {
+  const container = document.getElementById('med-list');
+  if (medDefs.length === 0) {
+    container.innerHTML = `<div style="color:var(--gray-400); font-size:0.85rem; padding:8px 0; margin-bottom:8px;">등록된 약이 없습니다</div>`;
+    return;
+  }
+  container.innerHTML = medDefs.map(m => `
+    <div class="med-list-item">
+      <div class="med-list-icon">${m.icon}</div>
+      <div class="med-list-info">
+        <div class="med-list-name">${m.name}</div>
+        <div class="med-list-timing">${TIMING_LABEL[m.timing] || m.timing}</div>
+      </div>
+      <div class="med-list-actions">
+        <button class="med-list-edit" onclick="openForm('${m.id}')">✎</button>
+        <button class="med-list-del"  onclick="deleteMedDef('${m.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function openForm(id) {
+  editingId = id;
+  const form = document.getElementById('med-form');
+  form.style.display = 'block';
+  document.getElementById('form-title').textContent = id ? '약/영양제 수정' : '새 약/영양제 추가';
+
+  if (id) {
+    const m = medDefs.find(x => x.id === id);
+    if (m) {
+      document.getElementById('f-icon').value = m.icon;
+      document.getElementById('f-name').value = m.name;
+      formTiming = m.timing;
+    }
+  } else {
+    document.getElementById('f-icon').value = '💊';
+    document.getElementById('f-name').value = '';
+    formTiming = '아침';
+  }
+  document.querySelectorAll('.timing-opt').forEach(b => {
+    b.classList.toggle('selected', b.dataset.val === formTiming);
+  });
+  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeForm() {
+  document.getElementById('med-form').style.display = 'none';
+  editingId = null;
+}
+
+function selectTiming(el) {
+  formTiming = el.dataset.val;
+  document.querySelectorAll('.timing-opt').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function saveMedDef() {
+  const icon = document.getElementById('f-icon').value.trim() || '💊';
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('이름을 입력하세요'); return; }
+
+  if (editingId) {
+    const idx = medDefs.findIndex(m => m.id === editingId);
+    if (idx !== -1) medDefs[idx] = { id: editingId, name, timing: formTiming, icon };
+  } else {
+    medDefs.push({ id: Date.now().toString(), name, timing: formTiming, icon });
+  }
+  localStorage.setItem(MEDS_LIST, JSON.stringify(medDefs));
+  closeForm();
+  renderMedList();
+  renderPage();
+  showToast(editingId ? `${name} 수정됨` : `${name} 추가됨`);
+}
+
+function deleteMedDef(id) {
+  const m = medDefs.find(x => x.id === id);
+  if (!m) return;
+  if (!confirm(`'${m.name}'을(를) 삭제할까요?`)) return;
+  medDefs = medDefs.filter(x => x.id !== id);
+  localStorage.setItem(MEDS_LIST, JSON.stringify(medDefs));
+  renderMedList();
+  renderPage();
+  showToast('삭제되었습니다');
+}
+
+// ── 상태 바 ──
+function showSyncBar(msg, type = '') {
+  const bar = document.getElementById('sync-bar');
+  bar.textContent = msg;
+  bar.className = 'show' + (type ? ' ' + type : '');
+  if (type === 'synced') setTimeout(hideSyncBar, 3000);
+}
+function hideSyncBar() { document.getElementById('sync-bar').className = ''; }
+
+// ── 토스트 ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── 초기화 ──
+document.addEventListener('DOMContentLoaded', () => {
+  // 약 정의 로드
+  const saved = localStorage.getItem(MEDS_LIST);
+  medDefs = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_MEDS));
+  if (!saved) localStorage.setItem(MEDS_LIST, JSON.stringify(medDefs));
+
+  // 기록 로드
+  allRecords = JSON.parse(localStorage.getItem(MEDS_RECS) || '[]');
+  renderPage();
+  syncFromSheets();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+});
+</script>
+</body>
+</html>
