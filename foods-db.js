@@ -1,7 +1,7 @@
 // ============================================================
 // 한국 식품 영양 데이터베이스 (1인분 기준)
 // 출처: 식품의약품안전처 식품영양성분 DB 참고
-// 단위: 칼로리(kcal), 나트륨(mg), 탄수화물/지방/당류/단백질(g)
+// 단위: 칼로리(kcal), 나트륨(mg), 탄수화물/지방/당류/단백질(g), 칼륨(mg, 있는 경우만)
 // ============================================================
 
 const FOOD_DB = [
@@ -90,7 +90,7 @@ const FOOD_DB = [
   // ── 빵/간식 ──
   { name: "식빵(2장)", cal: 160,  na: 240, carb: 29, fat: 2,  sugar: 4,  protein: 5,  serving: 70,  unit: "2장" },
   { name: "크로아상", cal: 260,   na: 400, carb: 28, fat: 14, sugar: 4,  protein: 5,  serving: 80,  unit: "1개" },
-  { name: "바나나", cal: 85,      na: 1,   carb: 22, fat: 0.3, sugar: 14, protein: 1,  serving: 100, unit: "1개" },
+  { name: "바나나", cal: 85,      na: 1,   carb: 22, fat: 0.3, sugar: 14, protein: 1,  potassium: 358, serving: 100, unit: "1개" },
   { name: "사과", cal: 55,        na: 1,   carb: 15, fat: 0.2, sugar: 11, protein: 0.3, serving: 130, unit: "1개" },
   { name: "과자(새우깡)", cal: 270, na: 450, carb: 42, fat: 10, sugar: 3, protein: 4, serving: 90,  unit: "1봉지" },
   { name: "초콜릿바", cal: 230,   na: 85,  carb: 28, fat: 12, sugar: 22, protein: 3,  serving: 50,  unit: "1개" },
@@ -387,7 +387,7 @@ const FOOD_DB = [
   { name: "스파게티(미트볼)", cal: 620, na: 850,  carb: 78, fat: 20, sugar: 8,  protein: 28, serving: 350, unit: "1인분" },
 
   // ── 나물/반찬류 ──
-  { name: "시금치나물",    cal: 40,  na: 300,  carb: 4,  fat: 2,   sugar: 0.5, protein: 2,  serving: 70,  unit: "1접시" },
+  { name: "시금치나물",    cal: 40,  na: 300,  carb: 4,  fat: 2,   sugar: 0.5, protein: 2,  potassium: 300, serving: 70,  unit: "1접시" },
   { name: "콩나물무침",    cal: 30,  na: 200,  carb: 3,  fat: 1,   sugar: 0.5, protein: 2,  serving: 70,  unit: "1접시" },
   { name: "도라지나물",    cal: 60,  na: 250,  carb: 10, fat: 2,   sugar: 1,   protein: 1,  serving: 70,  unit: "1접시" },
   { name: "고사리나물",    cal: 55,  na: 280,  carb: 7,  fat: 2,   sugar: 0.5, protein: 2,  serving: 70,  unit: "1접시" },
@@ -474,12 +474,12 @@ const FOOD_DB = [
   { name: "닭가슴살(삶은)",  cal: 165, na: 70,  carb: 0,  fat: 3.6, sugar: 0,   protein: 31, serving: 100, unit: "100g" },
   { name: "오트밀",          cal: 300, na: 5,   carb: 54, fat: 5,   sugar: 1,   protein: 11, serving: 80,  unit: "1그릇" },
   { name: "두부(반모)",       cal: 110, na: 10,  carb: 3,  fat: 6,   sugar: 0,   protein: 10, serving: 150, unit: "반모" },
-  { name: "아보카도(반개)",   cal: 160, na: 7,   carb: 9,  fat: 15,  sugar: 0.7, protein: 2,  serving: 100, unit: "반개" },
+  { name: "아보카도(반개)",   cal: 160, na: 7,   carb: 9,  fat: 15,  sugar: 0.7, protein: 2,  potassium: 485, serving: 100, unit: "반개" },
   { name: "닭가슴살샐러드",  cal: 200, na: 350,  carb: 10, fat: 5,   sugar: 3,   protein: 28, serving: 250, unit: "1인분" },
   { name: "현미밥",          cal: 280, na: 3,   carb: 60, fat: 2,   sugar: 0,   protein: 6,  serving: 210, unit: "1공기" },
   { name: "견과류(혼합)",    cal: 280, na: 50,  carb: 10, fat: 25,  sugar: 3,   protein: 9,  serving: 50,  unit: "50g" },
-  { name: "고구마(찐)",      cal: 130, na: 30,  carb: 31, fat: 0.1, sugar: 8,   protein: 1.5,serving: 120, unit: "1개" },
-  { name: "삶은감자",        cal: 80,  na: 5,   carb: 18, fat: 0.1, sugar: 1,   protein: 2,  serving: 130, unit: "1개" },
+  { name: "고구마(찐)",      cal: 130, na: 30,  carb: 31, fat: 0.1, sugar: 8,   protein: 1.5, potassium: 404, serving: 120, unit: "1개" },
+  { name: "삶은감자",        cal: 80,  na: 5,   carb: 18, fat: 0.1, sugar: 1,   protein: 2,   potassium: 547, serving: 130, unit: "1개" },
   { name: "프로틴바",        cal: 200, na: 150,  carb: 22, fat: 6,   sugar: 8,   protein: 20, serving: 55,  unit: "1개" },
 
   // ── 술/주류 ──

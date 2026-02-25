@@ -189,7 +189,7 @@
 <div class="sodium-summary">
   <div class="summary-row">
     <div>
-      <div class="summary-title">오늘 나트륨</div>
+      <div class="summary-title" id="na-summary-title">오늘 나트륨</div>
       <div><span class="sodium-number" id="total-na">0</span><span class="sodium-unit">mg</span>
            <span id="na-limit-text" style="font-size:0.75rem; color:var(--gray-400)"> / 2,000mg (WHO 권장)</span></div>
     </div>
@@ -197,6 +197,17 @@
   </div>
   <div class="progress-bar">
     <div class="progress-fill" id="na-progress" style="width:0%"></div>
+  </div>
+  <!-- 칼륨 상쇄 표시 (칼륨 섭취 시에만 노출) -->
+  <div id="k-row" style="display:none; margin-top:10px; padding-top:10px;
+       border-top:1px dashed var(--gray-200);
+       display:none; justify-content:space-between; align-items:center;">
+    <span style="font-size:0.75rem; color:var(--gray-400)">
+      실제 나트륨 <span id="actual-na-display">0</span>mg
+    </span>
+    <span style="font-size:0.78rem; font-weight:600; color:var(--green)">
+      🍌 칼륨 상쇄 -<span id="k-offset-display">0</span>mg
+    </span>
   </div>
   <div class="nutrient-grid">
     <div class="nutrient-box">
@@ -305,7 +316,11 @@
         </div>
       </div>
       <div class="field-row">
-        <div class="field-group full">
+        <div class="field-group">
+          <label>칼륨 K (mg) 🍌</label>
+          <input type="number" id="f-potassium" inputmode="decimal" placeholder="0">
+        </div>
+        <div class="field-group">
           <label>메모</label>
           <input type="text" id="f-notes" placeholder="예: 2인분, 소량">
         </div>
@@ -508,7 +523,7 @@ function selectMeal(el) {
 }
 
 function clearForm() {
-  ['food-search','f-name','f-na','f-cal','f-carb','f-fat','f-sugar','f-protein','f-notes']
+  ['food-search','f-name','f-na','f-cal','f-carb','f-fat','f-sugar','f-protein','f-potassium','f-notes']
     .forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('food-count').value = 1;
   document.getElementById('autocomplete').classList.remove('show');
@@ -530,12 +545,13 @@ function syncServingBtns(val) {
 function updateNutritionFromBase() {
   if (!baseFood) return;
   const m = currentServing * currentCount;
-  document.getElementById('f-na').value      = Math.round(baseFood.na * m);
-  document.getElementById('f-cal').value     = Math.round(baseFood.cal * m);
-  document.getElementById('f-carb').value    = Math.round(baseFood.carb * m * 10) / 10;
-  document.getElementById('f-fat').value     = Math.round(baseFood.fat * m * 10) / 10;
-  document.getElementById('f-sugar').value   = Math.round(baseFood.sugar * m * 10) / 10;
-  document.getElementById('f-protein').value = Math.round(baseFood.protein * m * 10) / 10;
+  document.getElementById('f-na').value        = Math.round(baseFood.na * m);
+  document.getElementById('f-cal').value       = Math.round(baseFood.cal * m);
+  document.getElementById('f-carb').value      = Math.round(baseFood.carb * m * 10) / 10;
+  document.getElementById('f-fat').value       = Math.round(baseFood.fat * m * 10) / 10;
+  document.getElementById('f-sugar').value     = Math.round(baseFood.sugar * m * 10) / 10;
+  document.getElementById('f-protein').value   = Math.round(baseFood.protein * m * 10) / 10;
+  document.getElementById('f-potassium').value = Math.round((baseFood.potassium || 0) * m);
 }
 
 function setServing(val) {
@@ -578,24 +594,26 @@ function openEditModal(datetime) {
   // 인분×개수 역산해서 baseFood 복원 (인분·개수 버튼 조작 가능하도록)
   const totalMult = srv * cnt;
   baseFood = {
-    na:      record.sodium   / totalMult,
-    cal:     record.calories / totalMult,
-    carb:    record.carbs    / totalMult,
-    fat:     record.fat      / totalMult,
-    sugar:   record.sugar    / totalMult,
-    protein: record.protein  / totalMult,
+    na:        record.sodium     / totalMult,
+    cal:       record.calories   / totalMult,
+    carb:      record.carbs      / totalMult,
+    fat:       record.fat        / totalMult,
+    sugar:     record.sugar      / totalMult,
+    protein:   record.protein    / totalMult,
+    potassium: (record.potassium || 0) / totalMult,
   };
   syncServingBtns(srv);
   document.getElementById('food-count').value = cnt;
 
-  document.getElementById('f-name').value    = record.food_name;
-  document.getElementById('f-na').value      = record.sodium;
-  document.getElementById('f-cal').value     = record.calories;
-  document.getElementById('f-carb').value    = record.carbs;
-  document.getElementById('f-fat').value     = record.fat;
-  document.getElementById('f-sugar').value   = record.sugar;
-  document.getElementById('f-protein').value = record.protein;
-  document.getElementById('f-notes').value   = record.notes || '';
+  document.getElementById('f-name').value      = record.food_name;
+  document.getElementById('f-na').value        = record.sodium;
+  document.getElementById('f-cal').value       = record.calories;
+  document.getElementById('f-carb').value      = record.carbs;
+  document.getElementById('f-fat').value       = record.fat;
+  document.getElementById('f-sugar').value     = record.sugar;
+  document.getElementById('f-protein').value   = record.protein;
+  document.getElementById('f-potassium').value = record.potassium || 0;
+  document.getElementById('f-notes').value     = record.notes || '';
   document.getElementById('food-search').value = record.food_name;
 
   document.getElementById('modal-title').textContent = '음식 수정';
@@ -632,13 +650,14 @@ function selectFood(f) {
   currentCount = 1;
   syncServingBtns(1);
   document.getElementById('food-count').value = 1;
-  document.getElementById('f-name').value    = f.name;
-  document.getElementById('f-na').value      = f.na;
-  document.getElementById('f-cal').value     = f.cal;
-  document.getElementById('f-carb').value    = f.carb;
-  document.getElementById('f-fat').value     = f.fat;
-  document.getElementById('f-sugar').value   = f.sugar;
-  document.getElementById('f-protein').value = f.protein;
+  document.getElementById('f-name').value      = f.name;
+  document.getElementById('f-na').value        = f.na;
+  document.getElementById('f-cal').value       = f.cal;
+  document.getElementById('f-carb').value      = f.carb;
+  document.getElementById('f-fat').value       = f.fat;
+  document.getElementById('f-sugar').value     = f.sugar;
+  document.getElementById('f-protein').value   = f.protein;
+  document.getElementById('f-potassium').value = f.potassium || 0;
   document.getElementById('food-search').value = f.name;
   document.getElementById('autocomplete').classList.remove('show');
 }
@@ -668,7 +687,8 @@ async function saveFood() {
     carbs:     parseFloat(document.getElementById('f-carb').value)    || 0,
     fat:       parseFloat(document.getElementById('f-fat').value)      || 0,
     sugar:     parseFloat(document.getElementById('f-sugar').value)   || 0,
-    protein:   parseFloat(document.getElementById('f-protein').value) || 0,
+    protein:   parseFloat(document.getElementById('f-protein').value)   || 0,
+    potassium: parseFloat(document.getElementById('f-potassium').value) || 0,
     servings:  currentServing,
     count:     currentCount,
     notes:     document.getElementById('f-notes').value.trim()
@@ -715,19 +735,37 @@ function renderPage() {
 
   // 영양 합계
   const totals = records.reduce((acc, r) => {
-    acc.na    += r.sodium   || 0;
-    acc.cal   += r.calories || 0;
-    acc.sugar += r.sugar    || 0;
-    acc.fat   += r.fat      || 0;
+    acc.na        += r.sodium    || 0;
+    acc.cal       += r.calories  || 0;
+    acc.sugar     += r.sugar     || 0;
+    acc.fat       += r.fat       || 0;
+    acc.potassium += r.potassium || 0;
     return acc;
-  }, { na: 0, cal: 0, sugar: 0, fat: 0 });
+  }, { na: 0, cal: 0, sugar: 0, fat: 0, potassium: 0 });
 
-  document.getElementById('total-na').textContent    = Math.round(totals.na).toLocaleString();
+  // 칼륨 상쇄 계산 (1mg K → 0.59mg Na 상쇄, 나트륨-칼륨 분자량 비율 기준)
+  const kOffset  = Math.round(totals.potassium * 0.59);
+  const netNa    = Math.max(0, Math.round(totals.na) - kOffset);
+  const hasK     = totals.potassium > 0;
+
+  document.getElementById('total-na').textContent    = hasK ? netNa.toLocaleString() : Math.round(totals.na).toLocaleString();
   document.getElementById('total-cal').textContent   = Math.round(totals.cal);
   document.getElementById('total-sugar').textContent = Math.round(totals.sugar) + 'g';
   document.getElementById('total-fat').textContent   = Math.round(totals.fat) + 'g';
 
-  const pct = Math.min((totals.na / 2000) * 100, 100);
+  // 칼륨 상쇄 행 표시/숨김
+  const kRow = document.getElementById('k-row');
+  if (hasK) {
+    kRow.style.display = 'flex';
+    document.getElementById('actual-na-display').textContent  = Math.round(totals.na).toLocaleString();
+    document.getElementById('k-offset-display').textContent   = kOffset.toLocaleString();
+    document.getElementById('na-summary-title').textContent   = '오늘 순 나트륨 부담';
+  } else {
+    kRow.style.display = 'none';
+    document.getElementById('na-summary-title').textContent   = '오늘 나트륨';
+  }
+
+  const pct = Math.min((netNa / 2000) * 100, 100);
   const bar = document.getElementById('na-progress');
   bar.style.width = pct + '%';
   bar.className = 'progress-fill' + (pct >= 100 ? ' danger' : pct >= 70 ? ' warn' : '');

@@ -114,8 +114,8 @@ function getFoodSheet() {
   let sh = ss.getSheetByName(FOOD_SHEET);
   if (!sh) {
     sh = ss.insertSheet(FOOD_SHEET);
-    sh.appendRow(['datetime', 'meal', 'food_name', 'amount_g', 'calories', 'sodium', 'carbs', 'fat', 'sugar', 'protein', 'notes']);
-    styleHeader(sh, 11, '#065f46');
+    sh.appendRow(['datetime', 'meal', 'food_name', 'amount_g', 'calories', 'sodium', 'carbs', 'fat', 'sugar', 'protein', 'notes', 'potassium']);
+    styleHeader(sh, 12, '#065f46');
     sh.setFrozenRows(1);
     sh.setColumnWidth(1, 180);
     sh.setColumnWidth(3, 180);
@@ -138,8 +138,9 @@ function foodRead() {
       carbs:     Number(r[6]) || 0,
       fat:       Number(r[7]) || 0,
       sugar:     Number(r[8]) || 0,
-      protein:   Number(r[9]) || 0,
-      notes:     r[10] || ''
+      protein:   Number(r[9])  || 0,
+      notes:     r[10] || '',
+      potassium: Number(r[11]) || 0
     })).sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
     return ok({ data });
   } catch(e) { return err(e.message); }
@@ -159,7 +160,8 @@ function foodWrite(p) {
       Number(p.fat)       || 0,
       Number(p.sugar)     || 0,
       Number(p.protein)   || 0,
-      p.notes     || ''
+      p.notes     || '',
+      Number(p.potassium) || 0
     ]);
     return ok({});
   } catch(e) { return err(e.message); }
