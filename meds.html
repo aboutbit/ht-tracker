@@ -281,6 +281,7 @@ let allRecords   = [];  // taken records
 let medDefs      = [];  // medication definitions
 let editingId    = null;
 let formTiming   = '아침';
+let writePending = false;  // sync lock during write operations
 
 // ── 날짜 유틸 ──
 function dateKey(d) {
@@ -339,7 +340,7 @@ async function syncFromSheets() {
   showSyncBar('⏳ 동기화 중...');
   try {
     const json = await jsonpFetch(`${url}?sheet=meds&action=read`);
-    if (json.ok) {
+    if (json.ok && !writePending) {
       allRecords = json.data || [];
       localStorage.setItem(MEDS_RECS, JSON.stringify(allRecords));
       renderPage();
@@ -388,7 +389,9 @@ async function toggleMed(medId) {
     renderPage();
     showToast(`${med.name} 복용 취소`);
     showSyncBar('🗑 시트에서 삭제 중...');
+    writePending = true;
     const ok = await deleteMedRecord(taken.datetime, medId);
+    writePending = false;
     ok ? hideSyncBar() : showSyncBar('⚠️ 시트 삭제 실패', 'error');
     if (!ok) setTimeout(hideSyncBar, 3000);
   } else {
@@ -404,7 +407,9 @@ async function toggleMed(medId) {
     renderPage();
     showToast(`✅ ${med.name} 복용 완료`);
     showSyncBar('☁️ 시트 동기화 중...');
+    writePending = true;
     const ok = await writeMedRecord(record);
+    writePending = false;
     ok ? showSyncBar('✅ 동기화 완료', 'synced')
        : showSyncBar('⚠️ 시트 동기화 실패 — 로컬에는 저장됨', 'error');
     if (!ok) setTimeout(hideSyncBar, 3000);
