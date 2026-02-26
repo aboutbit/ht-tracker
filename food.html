@@ -371,6 +371,7 @@ function changeDate(dir) {
 
 // ── 메모리 캐시 ──
 let allRecords = [];
+let writePending = false;
 
 function getTodayRecords() {
   const key = dateKey(currentDate);
@@ -410,7 +411,7 @@ async function syncFromSheets() {
   if (!url) return;
   try {
     const json = await jsonpFetch(`${url}?sheet=food&action=read`);
-    if (json.ok) {
+    if (json.ok && !writePending) {
       allRecords = json.data || [];
       localStorage.setItem('food_records', JSON.stringify(allRecords));
       renderPage();
@@ -708,8 +709,10 @@ async function saveFood() {
   showToast(isEditing ? `${name} 수정됨` : `${name} 추가됨`);
 
   // 2. 구글 시트 동기화 (백그라운드)
+  writePending = true;
   if (isEditing && oldRecord) await deleteFromSheet(oldRecord);
   const ok = await syncFood(record);
+  writePending = false;
   if (!ok) showToast('⚠️ 시트 동기화 실패 — 로컬에는 저장됨');
 }
 
@@ -725,7 +728,11 @@ async function deleteFood(datetime, foodName) {
 
   // 2. 구글 시트 삭제 (백그라운드)
   const apiUrl = localStorage.getItem(API_KEY);
-  if (apiUrl) await deleteFromSheet({ datetime, food_name: foodName });
+  if (apiUrl) {
+    writePending = true;
+    await deleteFromSheet({ datetime, food_name: foodName });
+    writePending = false;
+  }
 }
 
 // ── 렌더링 ──

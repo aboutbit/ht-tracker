@@ -518,6 +518,7 @@
 // ── 상수 / 메모리 ──
 const API_URL_KEY = 'bp_api_url';
 let allRecords = [];
+let writePending = false;
 
 // ── 혈압 분류 ──
 function classifyBP(sbp, dbp) {
@@ -642,7 +643,7 @@ async function syncFromSheets() {
   showSyncBar('⏳ 시트 동기화 중...');
   try {
     const json = await jsonpFetch(`${apiUrl}?sheet=bp&action=read`);
-    if (json.ok) {
+    if (json.ok && !writePending) {
       allRecords = json.data || [];
       localStorage.setItem('bp_records', JSON.stringify(allRecords));
       renderRecords();
@@ -704,7 +705,9 @@ async function saveRecord() {
 
   // 2. 구글 시트 동기화 (백그라운드)
   showSyncBar('☁️ 구글 시트 동기화 중...');
+  writePending = true;
   const ok = await syncToSheet(record);
+  writePending = false;
   if (ok) {
     showSyncBar('✅ 시트 동기화 완료', 'synced');
   } else {
@@ -727,7 +730,9 @@ async function deleteRecord(datetime) {
   const apiUrl = localStorage.getItem(API_URL_KEY);
   if (apiUrl) {
     showSyncBar('🗑 구글 시트에서 삭제 중...');
+    writePending = true;
     const ok = await deleteFromSheet(datetime);
+    writePending = false;
     if (ok) {
       hideSyncBar();
     } else {

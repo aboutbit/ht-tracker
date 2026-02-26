@@ -360,6 +360,7 @@ function formatDt(isoStr) {
 
 // ── 메모리 캐시 ──
 let allRecords = [];
+let writePending = false;
 
 // ── JSONP (CORS 우회) ──
 function jsonpFetch(url, timeout = 12000) {
@@ -395,7 +396,7 @@ async function syncFromSheets() {
   showSyncBar('⏳ 시트 동기화 중...');
   try {
     const json = await jsonpFetch(`${apiUrl}?sheet=exercise&action=read`);
-    if (json.ok) {
+    if (json.ok && !writePending) {
       allRecords = json.data || [];
       localStorage.setItem('exercise_records', JSON.stringify(allRecords));
       renderRecords();
@@ -504,7 +505,9 @@ async function saveRecord() {
 
   // 2. 구글 시트 동기화 (백그라운드)
   showSyncBar('☁️ 구글 시트 동기화 중...');
+  writePending = true;
   const ok = await syncToSheet(record);
+  writePending = false;
   if (ok) {
     showSyncBar('✅ 시트 동기화 완료', 'synced');
   } else {
@@ -527,7 +530,9 @@ async function deleteRecord(datetime, name) {
   const apiUrl = localStorage.getItem(API_URL_KEY);
   if (apiUrl) {
     showSyncBar('🗑 구글 시트에서 삭제 중...');
+    writePending = true;
     const ok = await deleteFromSheet(datetime, name);
+    writePending = false;
     if (ok) {
       hideSyncBar();
     } else {
