@@ -319,29 +319,6 @@ function medDelete(p) {
 }
 
 // ════════════════════════════════════════
-// Telegram 알림
-// ════════════════════════════════════════
-const TELEGRAM_BOT_TOKEN = '8409366495:AAEu76y3fuSh4yjrzEnJ7C-7Pu_OuRkOm74';
-const TELEGRAM_CHAT_ID   = '8404210627';
-
-function sendTelegramMessage(text) {
-  const url = 'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendMessage';
-  UrlFetchApp.fetch(url, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text, parse_mode: 'HTML' })
-  });
-}
-
-function sendMorningBPReminder() {
-  sendTelegramMessage('🩺 <b>혈압 측정 시간</b> (오전 8시)\n지금 바로 기록해주세요!');
-}
-
-function sendEveningBPReminder() {
-  sendTelegramMessage('🩺 <b>혈압 측정 시간</b> (오후 10시)\n오늘 저녁 혈압을 기록해주세요!');
-}
-
-// ════════════════════════════════════════
 // 공통 유틸
 // ════════════════════════════════════════
 function ok(obj)  { return respond(Object.assign({ ok: true  }, obj)); }
