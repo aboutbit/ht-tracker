@@ -1,0 +1,75 @@
+name: Health Reminders
+
+on:
+  schedule:
+    - cron: '0 23 * * *'  # 08:00 KST - 비트즙
+    - cron: '0 0 * * *'   # 09:00 KST - 혈압 측정
+    - cron: '0 4 * * *'   # 13:00 KST - 칼슘/마그네슘
+    - cron: '0 6 * * *'   # 15:00 KST - 비트즙
+    - cron: '0 10 * * *'  # 19:00 KST - 칼슘/마그네슘 + 오메가3
+    - cron: '0 12 * * *'  # 21:00 KST - 혈압 측정
+  workflow_dispatch:
+    inputs:
+      hour_override:
+        description: 'UTC hour to simulate (00-23), leave empty for current time'
+        required: false
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine reminder
+        id: reminder
+        run: |
+          if [ -n "${{ github.event.inputs.hour_override }}" ]; then
+            HOUR="${{ github.event.inputs.hour_override }}"
+          else
+            HOUR=$(date -u +%H)
+          fi
+
+          echo "Current UTC hour: $HOUR"
+
+          case "$HOUR" in
+            "23")
+              TITLE="🥤 비트즙 먹기"
+              MSG="오전 8시 - 비트즙 먹을 시간입니다!"
+              ;;
+            "00")
+              TITLE="🩺 혈압 측정"
+              MSG="오전 9시 - 혈압 측정할 시간입니다!"
+              ;;
+            "04")
+              TITLE="💊 칼슘/마그네슘"
+              MSG="오후 1시 - 칼슘/마그네슘 영양제 드세요!"
+              ;;
+            "06")
+              TITLE="🥤 비트즙 먹기"
+              MSG="오후 3시 - 비트즙 먹을 시간입니다!"
+              ;;
+            "10")
+              TITLE="💊 칼슘/마그네슘 + 오메가3"
+              MSG="오후 7시 - 칼슘/마그네슘 영양제와 오메가3 드세요!"
+              ;;
+            "12")
+              TITLE="🩺 혈압 측정"
+              MSG="오후 9시 - 혈압 측정할 시간입니다!"
+              ;;
+            *)
+              echo "No reminder scheduled for UTC hour $HOUR"
+              exit 0
+              ;;
+          esac
+
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "msg=$MSG" >> $GITHUB_OUTPUT
+
+      - name: Send ntfy notification
+        if: steps.reminder.outputs.title != ''
+        run: |
+          curl -s -X POST \
+            -H "Title: ${{ steps.reminder.outputs.title }}" \
+            -H "Priority: high" \
+            -H "Tags: bell" \
+            -d "${{ steps.reminder.outputs.msg }}" \
+            https://ntfy.sh/find-phone-aa9d807aae2602d6ad24
+          echo "Notification sent: ${{ steps.reminder.outputs.title }}"
